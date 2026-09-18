@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+# new-plan.sh — Create tier-correct plan folder + minimal templates.
+# Usage:
+#   new-plan.sh T0 <name>
+#   new-plan.sh T1 <name>
+#   new-plan.sh T2 <name>
+#   new-plan.sh T3 <name>
+#   new-plan.sh T1|T2 <sub-name> <parent-epic>
+#   new-plan.sh --force T2 <name>     # overwrite existing
+
+set -euo pipefail
+
+[[ ! -f plans/context.md ]] && echo "NOTE: plans/ not bootstrapped — run bootstrap.sh first (continuing anyway)."
+
+FORCE=0
+if [[ "${1:-}" == "--force" ]]; then
+  FORCE=1
+  shift
+fi
+
+TIER="${1:-}"
+NAME="${2:-}"
+PARENT="${3:-}"
+
+usage() { echo "Usage: new-plan.sh [--force] <T0|T1|T2|T3> <name> [parent-epic]"; exit 1; }
+[[ -z "$TIER" || -z "$NAME" ]] && usage
+TIER=$(echo "$TIER" | tr '[:lower:]' '[:upper:]')
+
+ROOT="plans"
+[[ -n "$PARENT" ]] && ROOT="plans/${PARENT}"
+if [[ -n "$PARENT" && ! -f "plans/${PARENT}/OVERVIEW.md" ]]; then
+  echo "ERROR: parent epic 'plans/${PARENT}/OVERVIEW.md' not found."
+  echo "  Create it first: new-plan.sh T3 ${PARENT}"
+  exit 1
+fi
+TARGET="${ROOT}/${NAME}"
+
+# Overwrite protection
+if [[ -d "$TARGET" && "$FORCE" -eq 0 ]]; then
+  if [[ -f "${TARGET}/plan.md" || -f "${TARGET}/OVERVIEW.md" || -f "${TARGET}/tasks.md" ]]; then
+    echo "ERROR: plan already exists at ${TARGET}"
+    echo "  Refusing to overwrite. Use --force if you really mean it."
+    exit 1
+  fi
+fi
+
+case "$TIER" in
+  T0)
+    echo "T0 — no plan files. Implement directly."
+    echo "Optional: .agents/scripts/session-log.sh \"T0 ${NAME}\" \"what you did\""
+    exit 0
+    ;;
+  T1)
+    mkdir -p "$TARGET"
+    cat > "${TARGET}/plan.md" <<EOT
+# ${NAME}
+
+**Complexity**: T1
+
+## Goal
+
+
+## Acceptance
+- [ ] 
+
+## Tasks
+- [ ] 
+- [ ] 
+EOT
+    echo "Created T1 → ${TARGET}/plan.md"
+    ;;
+  T2)
+    mkdir -p "$TARGET"
+    cat > "${TARGET}/plan.md" <<EOT
+# ${NAME}
+
+**Complexity**: T2
+
+## Goal
+
+
+## Acceptance
+- [ ] 
+
+## Approach
+
+
+## Scope
+- In:
+- Out:
+EOT
+    cat > "${TARGET}/tasks.md" <<EOT
+# Tasks — ${NAME}
+
+- [ ] 
+- [ ] 
+- [ ] 
+EOT
+    cat > "${TARGET}/context.md" <<EOT
+# Context — ${NAME}
+
+## Files
+- 
+
+## Dependencies
+- 
+
+## Open questions
+- 
+EOT
+    echo "Created T2 → ${TARGET}/{plan,tasks,context}.md"
+    ;;
+  T3)
+    mkdir -p "$TARGET"
+    cat > "${TARGET}/OVERVIEW.md" <<EOT
+# Epic: ${NAME}
+
+**Complexity**: T3
+
+## Goal
+
+
+## Success
+- [ ] 
+
+## Sub-plans
+1. \`01-...\` — 
+2. \`02-...\` — 
+
+## Order / deps
+
+
+## Out of scope
+
+EOT
+    echo "Created T3 → ${TARGET}/OVERVIEW.md"
+    echo "Next: new-plan.sh T1|T2 <sub-name> ${NAME}"
+    ;;
+  *)
+    echo "Unknown tier: $TIER"; usage
+    ;;
+esac
+
+# Auto-update Active Plans in context.md
+if [[ -f plans/context.md && "$TIER" != "T0" ]]; then
+  # Relative path from plans/ for display (parent/sub or name)
+  if [[ -n "$PARENT" ]]; then
+    display="${PARENT}/${NAME}"
+  else
+    display="${NAME}"
+  fi
+  ap=$(grep -E '^Active Plans:' plans/context.md | head -1 || true)
+  if [[ -z "$ap" ]]; then
+    echo "Active Plans: ${display}" >> plans/context.md
+  elif echo "$ap" | grep -qE 'none|TBD|^Active Plans:\s*$'; then
+    sed -i.bak "s|^Active Plans:.*|Active Plans: ${display}|" plans/context.md
+    rm -f plans/context.md.bak
+  elif ! echo "$ap" | grep -qw "$display"; then
+    sed -i.bak "s|^Active Plans: \(.*\)|Active Plans: \1, ${display}|" plans/context.md
+    rm -f plans/context.md.bak
+  fi
+  echo "Active Plans updated → ${display}"
+fi
