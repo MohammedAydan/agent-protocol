@@ -54,7 +54,10 @@ grep -q '\[-\]' plans/valid-name/plan.md && ok "cancel marker" || bad "cancel ma
 
 # --- 5 close refuses open ---
 if run close-plan.sh plans/valid-name 2>/dev/null; then bad "close open tasks"; else ok "close refuses open"; fi
-for i in 1 2 3 4 5 6 7 8; do run task.sh plans/valid-name $i done >/dev/null 2>&1 || run task.sh plans/valid-name $i cancel x >/dev/null 2>&1 || true; done
+for i in 1 2 3 4 5 6 7 8; do
+  run task.sh plans/valid-name $i done >/dev/null 2>&1 || run task.sh plans/valid-name $i cancel x >/dev/null 2>&1 || true
+  run task.sh --acceptance plans/valid-name $i done >/dev/null 2>&1 || run task.sh --acceptance plans/valid-name $i cancel x >/dev/null 2>&1 || true
+done
 run close-plan.sh --force plans/valid-name >/dev/null
 [[ -f plans/valid-name/review.md ]] && ok "review created" || bad "review created"
 
@@ -77,7 +80,10 @@ ok "acceptance flags ran"
 ap=$(grep 'Active Plans:' plans/context.md)
 echo "$ap" | grep -q epic-x && ok "active lists epic" || bad "active lists epic"
 # close+archive 01-a only
-for i in 1 2 3 4 5 6; do run task.sh plans/epic-x/01-a $i cancel x >/dev/null 2>&1 || true; done
+for i in 1 2 3 4 5 6; do
+  run task.sh plans/epic-x/01-a $i cancel x >/dev/null 2>&1 || true
+  run task.sh --acceptance plans/epic-x/01-a $i cancel x >/dev/null 2>&1 || true
+done
 run close-plan.sh --force plans/epic-x/01-a >/dev/null
 printf '%s\n' '# R' '## Built' '- a' > plans/epic-x/01-a/review.md
 run archive.sh plans/epic-x/01-a >/dev/null

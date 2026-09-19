@@ -58,7 +58,9 @@ check_out "one [~] enforced" "ERROR" bash .agents/scripts/task.sh plans/smoke-t1
 bash .agents/scripts/task.sh plans/smoke-t1 1 done >/dev/null 2>&1
 for i in 1 2 3 4 5 6 7 8; do
   bash .agents/scripts/task.sh plans/smoke-t1 "$i" cancel "x" >/dev/null 2>&1 || true
+  bash .agents/scripts/task.sh --acceptance plans/smoke-t1 "$i" cancel "x" >/dev/null 2>&1 || true
 done
+
 
 # --- Regression: close last Active Plan must exit 0 and set none ---
 # First close smoke-t1 while other plans still active
@@ -103,7 +105,10 @@ rm -f plans/context.md.bak
 bash .agents/scripts/new-plan.sh T1 last-one >/dev/null 2>&1 || true
 # Ensure folder exists with filled plan
 [[ -d plans/last-one ]] || bash .agents/scripts/new-plan.sh --force T1 last-one >/dev/null 2>&1 || true
-for i in 1 2 3 4 5 6 7 8; do bash .agents/scripts/task.sh plans/last-one "$i" cancel "x" >/dev/null 2>&1 || true; done
+for i in 1 2 3 4 5 6 7 8; do
+  bash .agents/scripts/task.sh plans/last-one "$i" cancel "x" >/dev/null 2>&1 || true
+  bash .agents/scripts/task.sh --acceptance plans/last-one "$i" cancel "x" >/dev/null 2>&1 || true
+done
 check_exit0 "close LAST plan exit 0" bash .agents/scripts/close-plan.sh --force plans/last-one
 printf '%s\n' '# R' '## Built' '- last' > plans/last-one/review.md
 # Ensure only last-one is listed before archive
@@ -155,6 +160,41 @@ else
   echo "PASS  close refuses open tasks"; pass=$((pass+1))
 fi
 
+# D1: task.sh section scoping on T1
+bash .agents/scripts/new-plan.sh T1 d1-scope >/dev/null 2>&1
+cat > plans/d1-scope/plan.md <<'EOF'
+# d1-scope
+**Complexity**: T1
+
+## Goal
+test
+
+## Acceptance
+- [ ] a1
+- [ ] a2
+- [ ] a3
+
+## Tasks
+- [ ] t1
+- [ ] t2
+- [ ] t3
+EOF
+
+bash .agents/scripts/task.sh plans/d1-scope 1 start >/dev/null 2>&1 || true
+if grep -q '^- \[~\] t1' plans/d1-scope/plan.md && grep -q '^- \[ \] a1' plans/d1-scope/plan.md; then
+  echo "PASS  task.sh scopes to tasks section by default"; pass=$((pass+1))
+else
+  echo "FAIL  task.sh scopes to tasks section by default"; fail=$((fail+1))
+fi
+
+bash .agents/scripts/task.sh --acceptance plans/d1-scope 1 done >/dev/null 2>&1 || true
+if grep -q '^- \[x\] a1' plans/d1-scope/plan.md; then
+  echo "PASS  task.sh --acceptance scopes to acceptance section"; pass=$((pass+1))
+else
+  echo "FAIL  task.sh --acceptance scopes to acceptance section"; fail=$((fail+1))
+fi
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
+

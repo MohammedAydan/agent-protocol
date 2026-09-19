@@ -5,6 +5,7 @@
 #   task.sh --file plan.md <plan-folder> <n|text> <action> [reason]
 #   task.sh --file tasks.md <plan-folder> ...
 #   task.sh --acceptance <plan-folder> <n|text> done   # force plan.md (T2 acceptance)
+#   task.sh --section tasks|acceptance <plan-folder> <n|text> <action> [reason]
 #
 # Rules:
 #   start → max ONE [~] per *file* being edited (and warn if other file has [~])
@@ -15,10 +16,13 @@ set -euo pipefail
 
 FILE_OVERRIDE=""
 FORCE_ACCEPTANCE=0
-while [[ "${1:-}" == --* ]]; do
+SECTION_ARG=""
+while [[ "${1:-}" =~ ^- ]]; do
   case "$1" in
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     --file) FILE_OVERRIDE="$2"; shift 2 ;;
     --acceptance) FORCE_ACCEPTANCE=1; shift ;;
+    --section) SECTION_ARG="$2"; shift 2 ;;
     *) echo "Unknown flag: $1"; exit 1 ;;
   esac
 done
@@ -27,28 +31,92 @@ DIR="${1:-}"; SPEC="${2:-}"; ACTION="${3:-}"; REASON="${4:-}"
 [[ -z "$DIR" || -z "$SPEC" || -z "$ACTION" ]] && {
   sed -n '2,14p' "$0"; exit 1; }
 
-FILE=""
+RESOLVED_SECTION=""
 if [[ "$FORCE_ACCEPTANCE" -eq 1 ]]; then
+  RESOLVED_SECTION="acceptance"
+elif [[ -n "$SECTION_ARG" ]]; then
+  case "$SECTION_ARG" in
+    acceptance) RESOLVED_SECTION="acceptance" ;;
+    tasks) RESOLVED_SECTION="tasks" ;;
+    *) echo "ERROR: invalid section: $SECTION_ARG (expected tasks|acceptance)"; exit 1 ;;
+  esac
+fi
+
+FILE=""
+TARGET_SECTION=""
+if [[ "$RESOLVED_SECTION" == "acceptance" ]]; then
   FILE="${DIR}/plan.md"
+  TARGET_SECTION="Acceptance"
 elif [[ -n "$FILE_OVERRIDE" ]]; then
   case "$FILE_OVERRIDE" in
     plan.md|tasks.md) FILE="${DIR}/${FILE_OVERRIDE}" ;;
     *) FILE="$FILE_OVERRIDE" ;;
   esac
+  if [[ "$RESOLVED_SECTION" == "tasks" && "$FILE" == *"plan.md" ]]; then
+    TARGET_SECTION="Tasks"
+  fi
 else
   for cand in "${DIR}/tasks.md" "${DIR}/plan.md"; do
-    [[ -f "$cand" ]] && { FILE="$cand"; break; }
+    if [[ -f "$cand" ]]; then
+      FILE="$cand"
+      break
+    fi
   done
+  if [[ -n "$FILE" && "$FILE" == *"plan.md" ]]; then
+    if grep -qi '^##[[:space:]]*tasks' "$FILE"; then
+      TARGET_SECTION="Tasks"
+    fi
+  fi
 fi
+
 [[ -n "$FILE" && -f "$FILE" ]] || { echo "ERROR: no tasks.md/plan.md in ${DIR}"; exit 1; }
 
 LINE_NO=""
-if [[ "$SPEC" =~ ^[0-9]+$ ]]; then
-  LINE_NO=$(awk -v n="$SPEC" '/^- \[.\] /{c++; if(c==n){print NR; exit}}' "$FILE")
-  [[ -z "$LINE_NO" ]] && { echo "ERROR: checkbox #$SPEC not found in $FILE"; exit 1; }
+if [[ -n "$TARGET_SECTION" ]]; then
+  if [[ "$SPEC" =~ ^[0-9]+$ ]]; then
+    LINE_NO=$(awk -v sec="$TARGET_SECTION" -v n="$SPEC" '
+      BEGIN {
+        in_sec = 0; c = 0
+        if (tolower(sec) == "acceptance") {
+          re = "^##[[:space:]]+[Aa]cceptance"
+        } else {
+          re = "^##[[:space:]]+[Tt]asks"
+        }
+      }
+      $0 ~ re { in_sec = 1; next }
+      in_sec && /^##[[:space:]]+/ { in_sec = 0 }
+      in_sec && /^- \[.\] / {
+        c++
+        if (c == n) { print NR; exit }
+      }
+    ' "$FILE")
+    [[ -z "$LINE_NO" ]] && { echo "ERROR: checkbox #$SPEC not found in ## $TARGET_SECTION of $FILE"; exit 1; }
+  else
+    LINE_NO=$(awk -v sec="$TARGET_SECTION" -v pattern="$SPEC" '
+      BEGIN {
+        in_sec = 0
+        if (tolower(sec) == "acceptance") {
+          re = "^##[[:space:]]+[Aa]cceptance"
+        } else {
+          re = "^##[[:space:]]+[Tt]asks"
+        }
+      }
+      $0 ~ re { in_sec = 1; next }
+      in_sec && /^##[[:space:]]+/ { in_sec = 0 }
+      in_sec && /^- \[.\] / && index($0, pattern) {
+        print NR; exit
+      }
+    ' "$FILE")
+    [[ -z "$LINE_NO" ]] && { echo "ERROR: no checkbox matching '$SPEC' in ## $TARGET_SECTION of $FILE"; exit 1; }
+  fi
 else
-  LINE_NO=$(grep -nE '^\- \[.\] .*'"$(echo "$SPEC" | sed 's/[][\.*^$/]/\\&/g')" "$FILE" | head -1 | cut -d: -f1 || true)
-  [[ -z "$LINE_NO" ]] && { echo "ERROR: no checkbox matching '$SPEC' in $FILE"; exit 1; }
+  if [[ "$SPEC" =~ ^[0-9]+$ ]]; then
+    LINE_NO=$(awk -v n="$SPEC" '/^- \[.\] /{c++; if(c==n){print NR; exit}}' "$FILE")
+    [[ -z "$LINE_NO" ]] && { echo "ERROR: checkbox #$SPEC not found in $FILE"; exit 1; }
+  else
+    LINE_NO=$(grep -nE '^\- \[.\] .*'"$(echo "$SPEC" | sed 's/[][\.*^$/]/\\&/g')" "$FILE" | head -1 | cut -d: -f1 || true)
+    [[ -z "$LINE_NO" ]] && { echo "ERROR: no checkbox matching '$SPEC' in $FILE"; exit 1; }
+  fi
 fi
 
 CURRENT=$(sed -n "${LINE_NO}p" "$FILE")
