@@ -1,0 +1,11 @@
+# D10 Option B: framework repo tracks its own minimal brain files (dogfooding),
+# but ignores volatile per-plan folders and archives.
+plans/*
+!plans/context.md
+!plans/SESSION_LOG.md
+!plans/ARCH.md
+!plans/TECH_STACK.md
+!plans/DECISIONS.md
+!plans/PATTERNS.md
+!plans/CERT_BENCHMARK.md
+!plans/_red/
