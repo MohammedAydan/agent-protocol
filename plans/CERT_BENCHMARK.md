@@ -26,6 +26,8 @@
 | **D12** | Scan OVERVIEW.md | `close-plan.sh` and `archive.sh` scan `OVERVIEW.md` for open tasks before close/archive | `bbcb862` | **PASSED** |
 | **D13** | Promote regression guard | Stress test 22 guards T1 to T2 promotion, task count retention, and comment isolation | `f90aeef` | **PASSED** |
 
+> **Sub-fix**: while implementing D12, `task.sh` state-equality checks were hardened against false-positive matches on user-supplied text containing `[x]` or `[~]`. The check now anchors at line start using `case "$CURRENT" in "- [x]"*) ...`. This is a regression fix absorbed into commit bbcb862; it does not alter observable behavior for well-formed plan files.
+
 ---
 
 ## Verification Gates & Benchmark Results
