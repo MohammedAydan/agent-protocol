@@ -1,5 +1,7 @@
-# install-global.ps1 — Agent Protocol global install for Windows (PowerShell-native CLI)
+# install-global.ps1 — Agent Protocol global install (Windows, PowerShell-native)
 # irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.ps1 | iex
+#
+# Does NOT require Git for Windows for: version, home, init, update, upgrade
 
 $ErrorActionPreference = "Stop"
 $Owner = if ($env:AGENT_PROTOCOL_OWNER) { $env:AGENT_PROTOCOL_OWNER } else { "MohammedAydan" }
@@ -20,33 +22,35 @@ try {
   }
   $zip = Join-Path $tmp "p.zip"
   Write-Host "  download: $url"
-  try { Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing }
-  catch {
-    Invoke-WebRequest -Uri "https://github.com/$Owner/$Repo/archive/refs/heads/main.zip" -OutFile $zip -UseBasicParsing
+  try {
+    Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+  } catch {
+    $url = "https://github.com/$Owner/$Repo/archive/refs/heads/main.zip"
+    Write-Host "  retry: $url"
+    Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
   }
   Expand-Archive -Path $zip -DestinationPath $tmp -Force
   $pkg = Get-ChildItem $tmp -Directory | Where-Object { $_.Name -like "$Repo-*" } | Select-Object -First 1
-  if (-not $pkg -or -not (Test-Path (Join-Path $pkg.FullName "AGENTS.md"))) { throw "Invalid archive" }
+  if (-not $pkg -or -not (Test-Path (Join-Path $pkg.FullName "AGENTS.md"))) {
+    throw "Invalid package archive from GitHub"
+  }
 
   if (Test-Path $Dest) { Remove-Item -Recurse -Force $Dest }
   New-Item -ItemType Directory -Path $Dest -Force | Out-Null
   Copy-Item -Recurse -Force (Join-Path $pkg.FullName "*") $Dest
 
-  # Ensure PS CLI exists even if archive was old
-  $psCli = Join-Path $Dest "bin\agent-protocol.ps1"
-  if (-not (Test-Path $psCli)) {
-    Write-Host "WARNING: agent-protocol.ps1 missing in package" -ForegroundColor Yellow
+  $ps1Path = Join-Path $Dest "bin\agent-protocol.ps1"
+  if (-not (Test-Path $ps1Path)) {
+    throw "Package missing bin/agent-protocol.ps1 — push latest release to GitHub main"
   }
 
+  # Shim: always PowerShell (never requires Git Bash)
   $shimDir = Join-Path $env:LOCALAPPDATA "agent-protocol\shims"
   New-Item -ItemType Directory -Path $shimDir -Force | Out-Null
-
-  # agent-protocol.cmd → PowerShell CLI (no Git Bash required)
   $cmdFile = Join-Path $shimDir "agent-protocol.cmd"
-  $ps1 = Join-Path $Dest "bin\agent-protocol.ps1"
   @"
 @echo off
-powershell -NoProfile -ExecutionPolicy Bypass -File "$ps1" %*
+powershell -NoProfile -ExecutionPolicy Bypass -File "$ps1Path" %*
 "@ | Set-Content -Encoding ascii $cmdFile
 
   $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -59,26 +63,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$ps1" %*
 
   "1.0.0" | Set-Content -Encoding ascii (Join-Path $Dest "VERSION")
 
-  $bashOk = $false
-  foreach ($c in @(
-    "$env:ProgramFiles\Git\bin\bash.exe",
-    "${env:ProgramFiles(x86)}\Git\bin\bash.exe",
-    "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe"
-  )) { if (Test-Path $c) { $bashOk = $true; break } }
-
   Write-Host ""
-  Write-Host "=== Installed ===" -ForegroundColor Green
+  Write-Host "=== Installed (PowerShell-native, Git optional) ===" -ForegroundColor Green
   Write-Host "  Package: $Dest"
-  Write-Host "  Command: agent-protocol (PowerShell-native)"
-  if (-not $bashOk) {
-    Write-Host "  Note: Git Bash not found — version/update/upgrade/init work without it." -ForegroundColor Yellow
-    Write-Host "  Optional: install Git for Windows for doctor/test/task scripts."
-  }
+  Write-Host "  Shim   : $cmdFile"
   Write-Host ""
   Write-Host "  Open a NEW PowerShell window, then:"
   Write-Host "    agent-protocol version"
   Write-Host "    agent-protocol update"
   Write-Host "    agent-protocol upgrade"
+  Write-Host "    agent-protocol init --adapters none"
 } finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }

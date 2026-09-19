@@ -1,26 +1,33 @@
-# Install & Update
+# Install & Update — Agent Protocol 1.0.0
 
 **Repo:** https://github.com/MohammedAydan/agent-protocol
 
-## Windows (PowerShell) — global CLI
+---
+
+## Windows (PowerShell) — لا يحتاج Git للأوامر الأساسية
 
 ```powershell
 irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.ps1 | iex
 ```
 
-Close the window, open a **new** PowerShell:
+افتح **PowerShell جديد**:
 
 ```powershell
 agent-protocol version
+agent-protocol home
+
 cd D:\path\to\your-project
-agent-protocol init --here --adapters none
+agent-protocol init --adapters none
 agent-protocol update
 agent-protocol upgrade
 ```
 
-Requires [Git for Windows](https://git-scm.com/download/win) (bash).
+| أمر | Git؟ |
+|-----|------|
+| `version` `home` `help` `init` `update` `upgrade` | لا |
+| `doctor` `test` `task` `new` … | اختياري (Git Bash) |
 
-### Project-only install (no global)
+### تثبيت على المشروع فقط (بدون CLI عالمي)
 
 ```powershell
 irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
@@ -28,77 +35,22 @@ irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-
 
 ---
 
-## macOS / Linux / Git Bash — global CLI
+## macOS / Linux / Git Bash
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
+
 agent-protocol version
+agent-protocol init --here --adapters none
+agent-protocol update    # يحدث ملفات البروتوكول في المشروع (plans/ تفضل)
+agent-protocol upgrade   # يحدث الحزمة العامة من GitHub
 ```
 
-## A) Global CLI (recommended)
+---
 
-```bash
-# From GitHub
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.sh | bash
+## الأمان
 
-# Or from a local checkout of this package
-bash install-global.sh
-```
-
-Ensure PATH:
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"   # add to ~/.bashrc or ~/.zshrc
-```
-
-### Commands
-
-| Command | Meaning |
-|---------|---------|
-| `agent-protocol init --here` | Install protocol into current project |
-| `agent-protocol update` | Refresh protocol **in this project** (keeps `plans/`) |
-| `agent-protocol update --force` | Full refresh of protocol files in project |
-| `agent-protocol upgrade` | Download latest package into **global** home |
-| `agent-protocol self-update` | Same as `upgrade` |
-| `agent-protocol doctor` | Audit current project |
-| `agent-protocol test` | Smoke tests |
-| `agent-protocol stress` | Hard edge-case tests |
-| `agent-protocol version` | Versions |
-| `agent-protocol help` | Help |
-
-### Typical lifecycle
-
-```bash
-# once on your machine
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.sh | bash
-
-# each project
-cd my-app
-agent-protocol init --here --adapters cursor,claude
-
-# when protocol releases updates
-agent-protocol upgrade          # update global package
-cd my-app && agent-protocol update   # pull into project (plans safe)
-```
-
-## B) Windows PowerShell (project only)
-
-```powershell
-irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
-```
-
-Interactive adapter menu. Global CLI on Windows: use **Git Bash** after `install-global.sh`.
-
-## C) One-shot project install (no global)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh \
-  | bash -s -- --here --adapters none --non-interactive
-```
-
-## Safety
-
-- Never overwrites app `README.md` / source / `.git`
-- `update` never deletes `plans/`
-- HTTPS-only downloads for remote install/upgrade
+- لا يستبدل `README.md` ولا كود التطبيق
+- `update` لا يحذف `plans/`
+- التحميل عبر HTTPS فقط
