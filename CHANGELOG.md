@@ -61,3 +61,16 @@ Internal iterations labeled 2.0–2.3 validated:
 - token compression and ask-when-unsure as hard rule
 
 Those learnings are folded into **1.0.0**; this is the supported production line.
+
+### Learnings patch (same 1.0.0 — post portfolio session)
+
+From real agent runs (portfolio T1 on Windows):
+
+- **Fill plan before code** — empty Goal/Acceptance/Tasks is a protocol violation
+- **Task lifecycle mandatory** — `start` → implement → verify → `done` when scripts exist
+- **Close required** — `close-plan` + SESSION_LOG before ending T1+ feature work
+- **Windows shell** — use Git Bash for `.agents/scripts`; do not embed bash `||` / complex one-liners in PowerShell
+- OpenCode / native AGENTS.md readers called out in adapter table
+
+No breaking install API changes.
+

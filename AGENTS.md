@@ -8,7 +8,7 @@ Version: **1.0.0**
 
 ## Mandate
 
-Ship working, verified code. Planning is a means, not a goal. **Token waste is failure.** Guessing is failure.
+Ship working, verified code. Planning is a means, not a goal. **Token waste is failure.** Guessing is failure. Skipping the task lifecycle is failure.
 
 ---
 
@@ -16,20 +16,11 @@ Ship working, verified code. Planning is a means, not a goal. **Token waste is f
 
 **Hard rule:** if anything is ambiguous, incomplete, or has ≥2 plausible interpretations → **stop and ask the human** using the harness ask/question tool when available, otherwise a short message.
 
-Ask when:
-- requirements, acceptance, or scope are unclear
-- design/API/library/naming choice is non-obvious
-- a small change still has 2+ reasonable paths
-- secrets, env values, prod config, or irreversible ops are involved
-- the plan or task text is incomplete
+Ask when: requirements/scope unclear · design/API/naming non-obvious · small change has 2+ paths · secrets/env/prod/irreversible ops · plan or task text incomplete.
 
-How to ask:
-- one focused question
-- 2–4 concrete options when possible
-- state what you will do if they pick each option
-- do **not** explore for many turns, invent “reasonable defaults”, or code past the ambiguity
+How: one focused question · 2–4 options when possible · state what you will do for each · do **not** invent defaults or code past the ambiguity.
 
-Clear and low-risk (T0 typo/config) → implement. Unclear → ask once, then implement.
+Clear low-risk T0 → implement. Unclear → ask once, then implement.
 
 ---
 
@@ -37,13 +28,15 @@ Clear and low-risk (T0 typo/config) → implement. Unclear → ask once, then im
 
 Prefer `.agents/scripts/resume.sh` (cheapest). Otherwise:
 
-1. `plans/context.md` (if exists) — head only
+1. `plans/context.md` (head only)
 2. **Last entry only** of `plans/SESSION_LOG.md`
 3. Active plan folder if resuming
-4. One short Session Resume line: active · last done · next · blockers
+4. One short Session Resume: active · last done · next · blockers
 5. Act. Never assume prior-turn memory.
 
 Missing `plans/` → `.agents/scripts/bootstrap.sh`.
+
+**Windows:** run scripts via Git Bash (`bash .agents/scripts/…`). Do not paste bash `||` / heredoc one-liners into PowerShell — use `bash -lc '…'` or native PowerShell.
 
 ---
 
@@ -59,26 +52,59 @@ Missing `plans/` → `.agents/scripts/bootstrap.sh`.
 | **T3** | multi-milestone / migration | `OVERVIEW.md` + sub-folders (each T1/T2) |
 
 Hard limits:
-- after required files exist → planning ends
+- after required files exist → planning structure ends; **then fill them** (see lifecycle)
 - ≤ 10 new files under `plans/` per session
 - 3 doc-only turns → implement or ask/report blocker
 - no exploration/notes/options files under `plans/`
 - prefer scripts: `new-plan.sh`, `task.sh`, `close-plan.sh`, `archive.sh`
 
-Markers: `[ ]` pending · `[~]` in-progress (**one** per plan folder) · `[x]` after real verify · `[!]` blocked · `[-]` cancelled. Use `task.sh` — never hand-edit.
+---
 
-Cycle: **Plan → Implement → Verify → Close → Archive**.
+## Feature lifecycle (mandatory for T1+)
 
-Living docs same turn: dependency → `TECH_STACK` · structure → `ARCH` · decision → `DECISIONS` · pattern → `PATTERNS`. Append `SESSION_LOG` at end of session.
+**Plan → Implement → Verify → Close → (Archive)**
+
+### 1) Plan (must complete before code)
+
+1. Choose tier → `new-plan.sh` (or equivalent files).
+2. **Immediately fill** Goal, Acceptance, and Tasks (not empty checkboxes).
+3. If any acceptance criterion is still unclear → **ask**, do not invent.
+
+Empty `plan.md` / empty Tasks while writing production code = protocol violation.
+
+### 2) Implement
+
+- Markers: `[ ]` pending · `[~]` in-progress (**max one** per plan folder) · `[x]` after real verify · `[!]` blocked · `[-]` cancelled.
+- **Prefer** `.agents/scripts/task.sh` (or `protocol.sh task`) — never hand-edit markers when scripts are available.
+- Order: `task … start` → code → verify → `task … done`.
+- Stay in scope. Related work → new `[ ]` item.
+
+### 3) Verify (required before `[x]`)
+
+- Lint/format pass when the project has them.
+- Tests/checks implied by acceptance against **real** output.
+- UI: open in browser or describe visual check when harness allows.
+- JS/TS: syntax check (`node --check` / project test runner) when applicable.
+
+### 4) Close (required before ending the feature)
+
+When all tasks are `[x]` or `[-]`:
+
+1. `close-plan.sh plans/<name>` (creates `review.md`)
+2. Append `SESSION_LOG.md` (what shipped, decisions, resume note)
+3. Optional: `archive.sh plans/<name>`
+
+Ending a T1+ feature with open tasks or no SESSION_LOG entry = incomplete.
+
+Living docs same turn when relevant: dependency → `TECH_STACK` · structure → `ARCH` · decision → `DECISIONS` · pattern → `PATTERNS`.
 
 ---
 
 ## Code quality
 
-- Strict typing; validate boundary inputs; explicit errors; small functions; why-comments only
+- Strict typing where the language supports it; validate boundary inputs; explicit errors; small functions; why-comments only
 - No hardcoded secrets/URLs/magic numbers
 - Prefer project’s existing package manager, linter, formatter, tests
-- `[x]` only after: lint/format pass + real tests from acceptance + UI evidence if supported
 
 ---
 
@@ -96,15 +122,22 @@ Default solo. Subagent only if human asks or ≥2 independent units. Parallel T3
 
 ---
 
-## Scripts (prefer over hand-writing)
+## Scripts
 
-`protocol.sh <cmd>` dispatches all. Core: `bootstrap` · `resume` · `new` · `task` · `status` · `next` · `close` · `archive` · `promote` · `doctor` · `log` · `doc` · `verify` · `test` · `sync`.
+`protocol.sh <cmd>` dispatches all. Core: `bootstrap` · `resume` · `new` · `task` · `status` · `next` · `close` · `archive` · `promote` · `doctor` · `log` · `doc` · `verify` · `test` · `sync` · `init`.
 
 ---
 
-## Anti-patterns
+## Anti-patterns (never)
 
-T2/T3 for trivial work · giant single plan · `[x]` before verify · silent scope expansion · guessing instead of asking · endless planning · `tools: []` on subagents · writing secrets
+- T2/T3 for trivial work · giant single plan
+- Coding with empty Goal/Acceptance/Tasks on T1+
+- Hand-waving past `task start/done` when scripts exist
+- `[x]` before real verification
+- Ending feature work without close + SESSION_LOG
+- Silent scope expansion · guessing instead of asking
+- Bash-only one-liners in PowerShell
+- `tools: []` on subagents · writing secrets
 
 ---
 
@@ -120,7 +153,8 @@ T2/T3 for trivial work · giant single plan · `[x]` before verify · silent sco
 | Copilot | `.github/copilot-instructions.md` |
 | Windsurf / Devin | `.windsurfrules` + `.windsurf/rules` + `.devin/rules` |
 | Cline / Roo | `.clinerules` / `.roorules` |
+| OpenCode / Aider / Zed | AGENTS.md native |
 
-Details: `adapters/README.md` · install: `sync-adapters.sh`.
+Details: `adapters/README.md` · install: `sync-adapters.sh` / `init`.
 
 Long architecture and dependency lists live in `plans/`, not here.

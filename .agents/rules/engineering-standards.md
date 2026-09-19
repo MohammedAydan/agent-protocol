@@ -15,6 +15,16 @@ Referenced by AGENTS.md. Apply to every language.
 
 Use `task.sh` — never hand-edit markers.
 
+## Feature lifecycle (T1+)
+
+1. Create plan files → **fill** Goal / Acceptance / Tasks  
+2. `task start` → implement → verify → `task done`  
+3. `close-plan` + SESSION_LOG (+ optional archive)  
+Empty plan while coding = violation. Skip close = incomplete.
+
+**Windows hosts:** run `.agents/scripts/*.sh` under Git Bash (`bash path/to/script.sh`), not as raw PowerShell.
+
+
 ## plans/ layout
 
 ```

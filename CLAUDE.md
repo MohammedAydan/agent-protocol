@@ -2,10 +2,11 @@
 
 @AGENTS.md
 
-> Imports canonical rules (v1.0.0). Keep this file thin. AGENTS.md wins on conflict.
+> Imports canonical rules (v1.0.0). AGENTS.md wins on conflict.
 
-- Prefer `.agents/scripts/` (especially `resume.sh`, `task.sh`, `new-plan.sh`).
-- Unsure → ask the human (AskUserQuestion / message). Never invent requirements.
-- Subagents: exact plan folder; one `[~]` per folder; no `tools: []`.
-- Parallel T3: git worktree isolation when available.
-- Native mirrors: `.claude/skills/`, `.claude/agents/` via `sync-adapters.sh`.
+- Prefer `.agents/scripts/` (`resume`, `new-plan`, `task`, `close-plan`).
+- T1+: **fill** Goal/Acceptance/Tasks → `task start` → code → verify → `task done` → `close` + SESSION_LOG.
+- Unsure → ask the human. Never invent requirements.
+- Subagents: exact plan folder; one `[~]`; no `tools: []`.
+- Windows hosts: run scripts under Git Bash.
+- Native mirrors: `.claude/skills/`, `.claude/agents/` via sync.
