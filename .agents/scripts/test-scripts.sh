@@ -363,6 +363,11 @@ check_out "doctor warns uncommitted review" "no commit yet" bash -c "cd '$GDIR' 
 check "doctor silent after commit" bash -c "! (cd '$GDIR' && bash .agents/scripts/doctor.sh 2>&1 | grep -q 'no commit yet')"
 rm -rf "$GDIR"
 
+# OPT-6: token-budget-aware tier selection
+check "AGENTS.md tier cost table" grep -q "Typical setup cost" "$ROOT/AGENTS.md"
+check "SKILL.md documents T0.5" grep -q "T0.5" "$ROOT/.agents/skills/plan-manager/SKILL.md"
+check_out "new-plan help prefers T0.5" "prefer it over T1" bash .agents/scripts/new-plan.sh --help
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]

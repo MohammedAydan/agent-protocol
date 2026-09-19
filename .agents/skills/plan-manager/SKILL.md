@@ -12,9 +12,18 @@ metadata:
 
 ## Tier (lowest viable)
 
+| Tier | Typical setup cost | Use when |
+|------|--------------------|----------|
+| T0   | ~0 tokens          | 1 file, obvious, typo-class |
+| T0.5 | ~50 tokens         | ≤3 files, one decision, ≤30 min |
+| T1   | ~200 tokens        | ≤3 files, clear acceptance, ≤1 h |
+| T2   | ~500 tokens        | 4–15 files / new module |
+| T3   | ~1500 tokens       | multi-milestone / cross-cutting |
+
 | Signal | Tier |
 |--------|------|
 | 1 file, obvious | **T0** — no files |
+| ≤3 files, one decision, ≤30 min | **T0.5** — `plans/_quick/<name>.md` only (no folder, no review) |
 | ≤3 files, clear acceptance | **T1** — `plan.md` only |
 | 4–15 files / new module | **T2** — plan + tasks + context |
 | multi-milestone / cross-cutting | **T3** — OVERVIEW + sub-folders (each T1/T2) |

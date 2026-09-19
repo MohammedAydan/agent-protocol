@@ -50,9 +50,18 @@ Windows-specific recipes: `docs/WINDOWS.md`.
 
 **Lowest viable tier.**
 
+| Tier  | Typical setup cost | Use when |
+|-------|--------------------|----------|
+| T0    | ~0 tokens          | Typo, one-liner |
+| T0.5  | ~50 tokens         | ≤3 files, one decision, ≤30 min |
+| T1    | ~200 tokens        | ≤3 files, clear acceptance, ≤1 h |
+| T2    | ~500 tokens        | Multi-file, new module |
+| T3    | ~1500 tokens       | Multi-milestone |
+
 | Tier | When | Create |
 |------|------|--------|
 | **T0** | typo / 1-liner / pure config | nothing — implement |
+| **T0.5** | ≤3 files, one decision, ≤30 min | `plans/_quick/<name>.md` (single file, no folder, no review) |
 | **T1** | ≤~3 files, clear acceptance | `plans/<name>/plan.md` only |
 | **T2** | multi-file / new module | `plan.md` + `tasks.md` + `context.md` |
 | **T3** | multi-milestone / migration | `OVERVIEW.md` + sub-folders (each T1/T2) |
