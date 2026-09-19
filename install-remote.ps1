@@ -1,45 +1,116 @@
-# Agent Protocol — Windows installer
-# One-liner (project folder):
+# Agent Protocol — Windows installer (interactive by default)
+#
+# Short:
 #   irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
 #
-# Options via env (before the command):
+# Skip menu (automation):
 #   $env:AP_ADAPTERS="claude,cursor"; irm ... | iex
-#   $env:AP_FORCE="1"; irm ... | iex
+#   $env:AP_ADAPTERS="all"; irm ... | iex
+#   $env:AP_NONINTERACTIVE="1"; $env:AP_ADAPTERS="none"; irm ... | iex
 #
-# Or save & run:
-#   iwr -useb URL -OutFile ap.ps1; powershell -ExecutionPolicy Bypass -File .\ap.ps1 -Adapters all
+# Force refresh protocol files:
+#   $env:AP_FORCE="1"; irm ... | iex
 
 param(
-  [string]$Adapters = $(if ($env:AP_ADAPTERS) { $env:AP_ADAPTERS } else { "all" }),
+  [string]$Adapters = "",
   [string]$Ref = $(if ($env:AP_REF) { $env:AP_REF } else { "main" }),
   [string]$Owner = $(if ($env:AP_OWNER) { $env:AP_OWNER } else { "MohammedAydan" }),
   [string]$Repo = $(if ($env:AP_REPO) { $env:AP_REPO } else { "agent-protocol" }),
   [string]$Name = "",
   [string]$Purpose = $(if ($env:AP_PURPOSE) { $env:AP_PURPOSE } else { "TBD" }),
-  [switch]$Force
+  [switch]$Force,
+  [switch]$NonInteractive
 )
 
-if ($env:AP_FORCE -eq "1") { $Force = $true }
-
 $ErrorActionPreference = "Stop"
+if ($env:AP_FORCE -eq "1") { $Force = $true }
+if ($env:AP_NONINTERACTIVE -eq "1") { $NonInteractive = $true }
+if (-not $Adapters -and $env:AP_ADAPTERS) { $Adapters = $env:AP_ADAPTERS }
+
 $Target = (Get-Location).Path
 if (-not $Name) { $Name = Split-Path $Target -Leaf }
 
+function Show-AdapterMenu {
+  Write-Host ""
+  Write-Host "Which AI harness adapters to install?" -ForegroundColor Cyan
+  Write-Host "  (AGENTS.md is always installed — works with many tools without adapters)"
+  Write-Host ""
+  Write-Host "  1) All harnesses"
+  Write-Host "  2) None  (AGENTS.md only — cleanest)"
+  Write-Host "  3) Claude Code"
+  Write-Host "  4) Cursor"
+  Write-Host "  5) GitHub Copilot"
+  Write-Host "  6) Windsurf / Devin"
+  Write-Host "  7) Cline"
+  Write-Host "  8) Roo"
+  Write-Host "  9) Codex CLI"
+  Write-Host " 10) Gemini / Antigravity"
+  Write-Host " 11) Custom list  (e.g. claude,cursor)"
+  Write-Host ""
+  Write-Host "  Tips: enter several numbers separated by comma  →  3,4"
+  Write-Host "        or names                                  →  claude,cursor"
+  Write-Host ""
+  $choice = Read-Host "Choice [2=None]"
+  if ([string]::IsNullOrWhiteSpace($choice)) { return "none" }
+
+  $map = @{
+    "1" = "all"; "2" = "none"; "3" = "claude"; "4" = "cursor"
+    "5" = "copilot"; "6" = "windsurf"; "7" = "cline"; "8" = "roo"
+    "9" = "codex"; "10" = "gemini"
+  }
+
+  $choice = $choice.Trim().ToLower() -replace '\s+', ''
+
+  if ($choice -eq "11" -or $choice -eq "custom") {
+    $custom = Read-Host "Enter list (claude,cursor,copilot,...)"
+    if ([string]::IsNullOrWhiteSpace($custom)) { return "none" }
+    return ($custom.ToLower() -replace '\s+', '')
+  }
+
+  # already a name list?
+  if ($choice -match '^(all|none|[a-z]+(,[a-z]+)*)$' -and $choice -notmatch '^\d') {
+    return $choice
+  }
+
+  $parts = $choice -split ','
+  $names = @()
+  foreach ($p in $parts) {
+    if ($map.ContainsKey($p)) {
+      if ($map[$p] -eq "all") { return "all" }
+      if ($map[$p] -eq "none") { return "none" }
+      $names += $map[$p]
+    } elseif ($p -match '^(claude|cursor|copilot|windsurf|cline|roo|codex|gemini)$') {
+      $names += $p
+    }
+  }
+  if ($names.Count -eq 0) { return "none" }
+  return (($names | Select-Object -Unique) -join ',')
+}
+
+# Resolve adapters: env/param wins; else interactive menu; else none (safe default)
+if (-not $Adapters) {
+  $canPrompt = -not $NonInteractive -and [Environment]::UserInteractive
+  # Also try console host
+  try {
+    if ($Host.Name -eq "ConsoleHost" -or $Host.UI.RawUI) { $canPrompt = -not $NonInteractive }
+  } catch {}
+
+  if ($canPrompt) {
+    $Adapters = Show-AdapterMenu
+  } else {
+    Write-Host "Non-interactive session and no AP_ADAPTERS set → installing AGENTS.md only (none)." -ForegroundColor Yellow
+    Write-Host "  Set `$env:AP_ADAPTERS='claude,cursor' (or 'all') to choose without a menu."
+    $Adapters = "none"
+  }
+}
+$Adapters = ($Adapters.ToLower() -replace '\s+', '')
+
+Write-Host ""
 Write-Host "=== Agent Protocol (Windows) ===" -ForegroundColor Cyan
 Write-Host "  target  : $Target"
 Write-Host "  repo    : $Owner/$Repo@$Ref"
 Write-Host "  adapters: $Adapters"
-
-$bash = $null
-foreach ($c in @(
-  "$env:ProgramFiles\Git\bin\bash.exe",
-  "${env:ProgramFiles(x86)}\Git\bin\bash.exe",
-  "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe"
-)) { if (Test-Path $c) { $bash = $c; break } }
-if (-not $bash) {
-  $g = Get-Command bash -ErrorAction SilentlyContinue
-  if ($g) { $bash = $g.Source }
-}
+Write-Host "  force   : $Force"
 
 $tmp = Join-Path $env:TEMP ("ap-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tmp | Out-Null
@@ -62,9 +133,9 @@ try {
 
   Expand-Archive -Path $zipPath -DestinationPath $tmp -Force
   $pkg = Get-ChildItem $tmp -Directory | Where-Object { $_.Name -like "$Repo-*" } | Select-Object -First 1
-  if (-not $pkg) { throw "Bad archive" }
+  if (-not $pkg) { throw "Bad archive from GitHub" }
 
-  function Copy-Proto($rel) {
+  function Copy-Proto([string]$rel) {
     $s = Join-Path $pkg.FullName $rel
     $d = Join-Path $Target $rel
     if (-not (Test-Path $s)) { return }
@@ -76,15 +147,21 @@ try {
     Write-Host "  + $rel"
   }
 
+  function Want([string]$key) {
+    if ($Adapters -eq "all") { return $true }
+    if ($Adapters -eq "none") { return $false }
+    return ($Adapters -split ',' ) -contains $key
+  }
+
   Write-Host "Installing (README & app source untouched)..."
   Copy-Proto "AGENTS.md"
   Copy-Proto ".agents"
+  # adapters folder always available for later selective sync; small
   Copy-Proto "adapters"
-  if ($Adapters -match '(^|,)(all|claude)(,|$)') { Copy-Proto "CLAUDE.md" }
-  if ($Adapters -match '(^|,)(all|gemini)(,|$)') { Copy-Proto "GEMINI.md" }
+  if (Want "claude") { Copy-Proto "CLAUDE.md" }
+  if (Want "gemini") { Copy-Proto "GEMINI.md" }
   "1.0.0" | Set-Content -Encoding ascii (Join-Path $Target ".agents\PROTOCOL_VERSION")
 
-  # plans/
   $plans = Join-Path $Target "plans"
   if (-not (Test-Path (Join-Path $plans "context.md"))) {
     New-Item -ItemType Directory -Force -Path $plans | Out-Null
@@ -110,10 +187,9 @@ Known Issues: none
     Write-Host "  + plans/"
   }
 
-  # adapters mirrors
   $ad = Join-Path $pkg.FullName "adapters"
-  function Install-Mirror($want, $srcRel, $dstRel) {
-    if ($Adapters -notmatch "(^|,)($want|all)(,|$)") { return }
+  function Install-Mirror([string]$key, [string]$srcRel, [string]$dstRel) {
+    if (-not (Want $key)) { return }
     $s = Join-Path $ad $srcRel
     if (-not (Test-Path $s)) { return }
     $d = Join-Path $Target $dstRel
@@ -123,27 +199,32 @@ Known Issues: none
     Copy-Item $s $d -Force
     Write-Host "  + $dstRel"
   }
-  Install-Mirror "cursor" "cursor\rules.mdc" ".cursor\rules\agent-protocol.mdc"
-  Install-Mirror "copilot" "copilot\copilot-instructions.md" ".github\copilot-instructions.md"
-  Install-Mirror "cline" "cline\clinerules" ".clinerules"
-  Install-Mirror "roo" "roo\roorules" ".roorules"
-  if ($Adapters -match '(^|,)(all|windsurf)(,|$)') {
+
+  Install-Mirror "cursor"  "cursor\rules.mdc"                    ".cursor\rules\agent-protocol.mdc"
+  Install-Mirror "copilot" "copilot\copilot-instructions.md"      ".github\copilot-instructions.md"
+  Install-Mirror "cline"   "cline\clinerules"                    ".clinerules"
+  Install-Mirror "roo"     "roo\roorules"                        ".roorules"
+
+  if (Want "windsurf") {
     $s = Join-Path $ad "windsurf\windsurfrules"
     if (Test-Path $s) {
-      Copy-Item $s (Join-Path $Target ".windsurfrules") -Force
-      New-Item -ItemType Directory -Force -Path (Join-Path $Target ".windsurf\rules") | Out-Null
-      New-Item -ItemType Directory -Force -Path (Join-Path $Target ".devin\rules") | Out-Null
-      Copy-Item $s (Join-Path $Target ".windsurf\rules\agent-protocol.md") -Force
-      Copy-Item $s (Join-Path $Target ".devin\rules\agent-protocol.md") -Force
-      Write-Host "  + windsurf/devin rules"
+      if ($Force -or -not (Test-Path (Join-Path $Target ".windsurfrules"))) {
+        Copy-Item $s (Join-Path $Target ".windsurfrules") -Force
+        New-Item -ItemType Directory -Force -Path (Join-Path $Target ".windsurf\rules") | Out-Null
+        New-Item -ItemType Directory -Force -Path (Join-Path $Target ".devin\rules") | Out-Null
+        Copy-Item $s (Join-Path $Target ".windsurf\rules\agent-protocol.md") -Force
+        Copy-Item $s (Join-Path $Target ".devin\rules\agent-protocol.md") -Force
+        Write-Host "  + windsurf/devin rules"
+      } else { Write-Host "  skip: windsurf/devin rules" }
     }
   }
-  if ($Adapters -match '(^|,)(all|claude)(,|$)') {
+
+  if (Want "claude") {
     $skills = Join-Path $Target ".agents\skills"
     if (Test-Path $skills) {
       New-Item -ItemType Directory -Force -Path (Join-Path $Target ".claude\skills") | Out-Null
       New-Item -ItemType Directory -Force -Path (Join-Path $Target ".claude\agents") | Out-Null
-      Get-ChildItem $skills -Directory | ForEach-Object {
+      Get-ChildItem $skills -Directory -ErrorAction SilentlyContinue | ForEach-Object {
         $d = Join-Path $Target ".claude\skills\$($_.Name)"
         New-Item -ItemType Directory -Force -Path $d | Out-Null
         $sk = Join-Path $_.FullName "SKILL.md"
@@ -159,15 +240,28 @@ Known Issues: none
     }
   }
 
+  if (Want "codex") {
+    $skills = Join-Path $Target ".agents\skills"
+    if (Test-Path $skills) {
+      New-Item -ItemType Directory -Force -Path (Join-Path $Target ".codex\skills") | Out-Null
+      Get-ChildItem $skills -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+        $d = Join-Path $Target ".codex\skills\$($_.Name)"
+        New-Item -ItemType Directory -Force -Path $d | Out-Null
+        $sk = Join-Path $_.FullName "SKILL.md"
+        if (Test-Path $sk) { Copy-Item $sk (Join-Path $d "SKILL.md") -Force }
+      }
+      Write-Host "  + .codex mirrors"
+    }
+  }
+
   Write-Host ""
   Write-Host "=== Ready ===" -ForegroundColor Green
+  Write-Host "  adapters installed: $Adapters"
   Write-Host "  README.md and app source were NOT modified."
-  Write-Host "  Open this folder in your AI agent (AGENTS.md is loaded automatically by many tools)."
-  if ($bash) {
-    Write-Host "  Git Bash found — optional: bash .agents/scripts/resume.sh"
-  } else {
-    Write-Host "  Optional: install Git for Windows to use .agents/scripts/*.sh"
-  }
+  Write-Host "  Later (Git Bash): bash .agents/scripts/resume.sh"
+  Write-Host ""
+  Write-Host "  Change adapters later:"
+  Write-Host "    `$env:AP_FORCE='1'; `$env:AP_ADAPTERS='claude,cursor'; irm ... | iex"
 }
 finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue

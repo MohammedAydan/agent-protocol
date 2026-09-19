@@ -2,35 +2,56 @@
 
 **Repo:** https://github.com/MohammedAydan/agent-protocol
 
-## Windows — أقصر أمر
+## Windows (PowerShell) — تفاعلي
 
-PowerShell داخل مجلد مشروعك:
+من مجلد مشروعك:
 
 ```powershell
 irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
 ```
 
-Harness محدد:
+سيظهر **قائمة** تختار منها:
+
+| إدخال | المعنى |
+|--------|--------|
+| `2` أو Enter | **None** — `AGENTS.md` فقط (أنظف خيار) |
+| `1` | كل الـ harnesses |
+| `3` | Claude فقط |
+| `4` | Cursor فقط |
+| `3,4` | Claude + Cursor |
+| `claude,cursor` | نفس الشيء بالأسماء |
+| `11` | قائمة مخصصة |
+
+### اختصارات بدون قائمة (أتمتة)
 
 ```powershell
+# Claude + Cursor فقط
 $env:AP_ADAPTERS="claude,cursor"; irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
+
+# الكل
+$env:AP_ADAPTERS="all"; irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
+
+# AGENTS.md فقط
+$env:AP_ADAPTERS="none"; irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
+
+# تحديث إجباري لملفات البروتوكول
+$env:AP_FORCE="1"; $env:AP_ADAPTERS="cursor"; irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
 ```
 
-أو تحميل ثم تشغيل:
-
-```powershell
-iwr -useb https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 -OutFile ap.ps1
-powershell -ExecutionPolicy Bypass -File .\ap.ps1
-```
+> **لا تستخدم** `| iex -s --` — هذا أسلوب bash وليس PowerShell.
 
 ## macOS / Linux / Git Bash / WSL
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh | bash -s -- --here --adapters all --non-interactive
+# تفاعلي (يسأل عن الـ adapters)
+curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh \
+  | bash -s -- --here
+
+# بدون قائمة
+curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh \
+  | bash -s -- --here --adapters claude,cursor --non-interactive
 ```
 
-## ملاحظات
+## ماذا لا يُمس؟
 
-- **لا يستبدل** `README.md` ولا كود التطبيق.
-- على Windows الأوامر الكاملة للشُل تحتاج [Git for Windows](https://git-scm.com/download/win)؛ التثبيت نفسه يعمل بـ PowerShell فقط.
-- الفرع الافتراضي: `main` (حتى تنشئ tag `v1.0.0`).
+`README.md` · كود التطبيق · `package.json` · `.git/`

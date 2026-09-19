@@ -33,24 +33,21 @@ Always choose the **lowest viable tier**. Unsure → ask the human.
 
 ---
 
-## Install (new or existing project)
+## Install
 
-**Repo:** https://github.com/MohammedAydan/agent-protocol
-
-### Windows (PowerShell)
+**Windows (PowerShell)** — asks which harness (default: none / clean):
 
 ```powershell
 irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
 ```
 
-### macOS / Linux / Git Bash / WSL
+**macOS / Linux / Git Bash:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh \
-  | bash -s -- --here --adapters all --non-interactive
+curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh | bash -s -- --here
 ```
 
-Full options: [INSTALL.md](INSTALL.md) · Security: [SECURITY.md](SECURITY.md)
+Shortcuts & details: [INSTALL.md](INSTALL.md)
 
 
 ## Layout
