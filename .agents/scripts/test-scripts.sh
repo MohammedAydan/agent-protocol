@@ -275,6 +275,18 @@ check_out "new-plan.sh --help prints T1 rule" "T1 rule: task.sh defaults to '## 
 check_out "doctor.sh --ascii prints [OK]" "[OK]" bash .agents/scripts/doctor.sh --ascii
 check_exit0 "status.sh --ascii exits 0" bash .agents/scripts/status.sh --ascii
 
+# D3: docs/WINDOWS.md exists and is referenced
+check "docs/WINDOWS.md exists" test -f "$ROOT/docs/WINDOWS.md"
+check "AGENTS.md points to docs/WINDOWS.md" grep -q "WINDOWS.md" "$ROOT/AGENTS.md"
+
+# D8: PowerShell update path shells out to update-project.sh
+check "ps1 delegates update to update-project.sh" grep -q "update-project.sh" "$ROOT/bin/agent-protocol.ps1"
+check "ps1 delegates init to init.sh" grep -q "init.sh" "$ROOT/bin/agent-protocol.ps1"
+
+# D10: .gitignore enforces plans/ policy
+check ".gitignore ignores plans/*" grep -q "^plans/\*" "$ROOT/.gitignore"
+check ".gitignore whitelists context.md" grep -q "^!plans/context.md" "$ROOT/.gitignore"
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
