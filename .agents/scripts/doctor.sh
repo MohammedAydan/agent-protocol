@@ -177,6 +177,22 @@ if [[ -f plans/context.md ]]; then
   fi
 fi
 
+# OPT-5: warn on closed (review.md present) plans with no commit yet (best-effort, git repos only)
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  tmp3=$(mktemp)
+  find plans -name review.md -not -path '*/_archive*' 2>/dev/null > "$tmp3" || true
+  while IFS= read -r rf; do
+    [[ -z "$rf" ]] && continue
+    dir=$(dirname "$rf")
+    git check-ignore -q "$rf" 2>/dev/null && continue
+    if [[ -z "$(git log --oneline -1 -- "$rf" 2>/dev/null)" ]]; then
+      rel="${dir#plans/}"
+      warn "review.md for '${rel}' has no commit yet (commit after every closed plan)"
+    fi
+  done < "$tmp3"
+  rm -f "$tmp3"
+fi
+
 [[ "$QUIET" -eq 0 ]] && echo ""
 if [[ "$QUIET" -eq 1 ]]; then
   if [[ "$ISSUES" -eq 0 ]]; then

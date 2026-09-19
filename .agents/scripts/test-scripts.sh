@@ -317,7 +317,7 @@ check "quiet status no headers" bash -c "! (cd '$QDIR' && bash .agents/scripts/s
 check_out "default resume unchanged" "SESSION RESUME" bash .agents/scripts/resume.sh
 check_out "default doctor unchanged" "Agent Protocol doctor" bash .agents/scripts/doctor.sh
 (cd "$QDIR" && bash .agents/scripts/new-plan.sh T1 qc >/dev/null 2>&1)
-(cd "$QDIR" && bash .agents/scripts/task.sh plans/qc 1 done >/dev/null 2>&1 && bash .agents/scripts/task.sh plans/qc 2 done >/dev/null 2>&1 && bash .agents/scripts/task.sh --acceptance plans/qc 1 done >/dev/null 2>&1)
+(cd "$QDIR" && bash .agents/scripts/task.sh plans/qc 1 done >/dev/null 2>&1 && bash .agents/scripts/task.sh plans/qc 2 done >/dev/null 2>&1 && bash .agents/scripts/task.sh --acceptance plans/qc 1 done >/dev/null 2>&1 && sed -i.bak "s|^Current Status:.*|Current Status: Active: qc|" plans/context.md && rm -f plans/context.md.bak)
 check_out "quiet close prints path" "review.md" bash -c "cd '$QDIR' && bash .agents/scripts/close-plan.sh --quiet plans/qc"
 (cd "$QDIR" && bash .agents/scripts/new-plan.sh T1 qt >/dev/null 2>&1)
 check_out "quiet task state line" "STARTED" bash -c "cd '$QDIR' && bash .agents/scripts/task.sh --quiet plans/qt 1 start"
@@ -335,6 +335,33 @@ grep -E '^- \[.\] ' plans/batch-a/plan.md > ba.txt
 grep -E '^- \[.\] ' plans/batch-b/plan.md > bb.txt
 check "batch equals sequential" diff ba.txt bb.txt
 rm -f ba.txt bb.txt
+
+# OPT-5: close-plan enforcement (T2 review gate + Bootstrapped context gate)
+bash .agents/scripts/new-plan.sh T2 strict-t2 >/dev/null 2>&1
+bash .agents/scripts/task.sh plans/strict-t2 1 done >/dev/null 2>&1
+bash .agents/scripts/task.sh plans/strict-t2 2 done >/dev/null 2>&1
+bash .agents/scripts/task.sh plans/strict-t2 3 done >/dev/null 2>&1
+bash .agents/scripts/task.sh --acceptance plans/strict-t2 1 done >/dev/null 2>&1
+printf '%s\n' '# Review — strict-t2' '' '## Built' '-' '' '## Edge cases' '-' > plans/strict-t2/review.md
+check "close refuses empty review T2" bash -c '! bash .agents/scripts/close-plan.sh plans/strict-t2 >/dev/null 2>&1'
+printf '%s\n' '# Review — strict-t2' '' '## Built' '- built thing' '' '## Edge cases' '-' > plans/strict-t2/review.md
+sed -i.bak "s|^Current Status:.*|Current Status: Active: strict-t2|" plans/context.md; rm -f plans/context.md.bak
+check_exit0 "close accepts filled review" bash .agents/scripts/close-plan.sh plans/strict-t2
+bash .agents/scripts/new-plan.sh T1 strict-ctx >/dev/null 2>&1
+bash .agents/scripts/task.sh plans/strict-ctx 1 done >/dev/null 2>&1
+bash .agents/scripts/task.sh plans/strict-ctx 2 done >/dev/null 2>&1
+bash .agents/scripts/task.sh --acceptance plans/strict-ctx 1 done >/dev/null 2>&1
+sed -i.bak "s|^Current Status:.*|Current Status: Bootstrapped|" plans/context.md; rm -f plans/context.md.bak
+check_out "close refuses Bootstrapped context" "Current Status" bash .agents/scripts/close-plan.sh plans/strict-ctx
+GDIR=$(mktemp -d)
+cp -a "$ROOT/.agents" "$GDIR/.agents"
+cp -a "$ROOT/AGENTS.md" "$GDIR/AGENTS.md"
+(cd "$GDIR" && git init -q && git add -A && git commit -qm init && bash .agents/scripts/bootstrap.sh "G" "test" >/dev/null 2>&1 && bash .agents/scripts/new-plan.sh T2 gw >/dev/null 2>&1)
+(cd "$GDIR" && bash .agents/scripts/task.sh plans/gw 1 done >/dev/null 2>&1 && bash .agents/scripts/task.sh plans/gw 2 done >/dev/null 2>&1 && bash .agents/scripts/task.sh plans/gw 3 done >/dev/null 2>&1 && bash .agents/scripts/task.sh --acceptance plans/gw 1 done >/dev/null 2>&1 && bash .agents/scripts/close-plan.sh --force plans/gw >/dev/null 2>&1)
+check_out "doctor warns uncommitted review" "no commit yet" bash -c "cd '$GDIR' && bash .agents/scripts/doctor.sh"
+(cd "$GDIR" && git add -A && git commit -qm close >/dev/null 2>&1)
+check "doctor silent after commit" bash -c "! (cd '$GDIR' && bash .agents/scripts/doctor.sh 2>&1 | grep -q 'no commit yet')"
+rm -rf "$GDIR"
 
 echo ""
 echo "Results: $pass passed, $fail failed"

@@ -42,6 +42,30 @@ if [[ "$unresolved" -eq 1 && "$FORCE" -eq 0 ]]; then
   exit 1
 fi
 
+# OPT-5 enforcement (skipped with --force):
+#  - T2/T3 only: pre-existing review.md with an empty '## Built' section.
+#    (T0.5/T1 exempt: a single line in plan.md is sufficient.)
+#  - Any T1+ folder close while plans/context.md is still Bootstrapped.
+if [[ "$FORCE" -eq 0 ]]; then
+  if [[ -f "${TARGET}/tasks.md" || -f "${TARGET}/OVERVIEW.md" || -f "${TARGET}/context.md" ]]; then
+    if [[ -f "${TARGET}/review.md" ]]; then
+      built_body=$(awk '/^## Built/{f=1;next} /^## /{f=0} f' "${TARGET}/review.md" | sed '/^$/d' | sed 's/^[- ]*//' | grep -v '^$' || true)
+      if [[ -z "$built_body" ]]; then
+        echo "REFUSED: ${TARGET}/review.md has an empty '## Built' section (T2/T3 require a filled review)."
+        echo "  Fix: fill in what was built, then re-run close-plan.sh ${TARGET}"
+        echo "  Or: close-plan.sh --force ${TARGET} (not recommended)"
+        exit 1
+      fi
+    fi
+  fi
+  if [[ -f plans/context.md ]] && grep -q '^Current Status: Bootstrapped' plans/context.md; then
+    echo "REFUSED: plans/context.md still has 'Current Status: Bootstrapped'."
+    echo "  Fix: update Current Status (e.g. 'Current Status: Active: <plan> — <what>'), then re-run close-plan.sh ${TARGET}"
+    echo "  Or: close-plan.sh --force ${TARGET} (not recommended)"
+    exit 1
+  fi
+fi
+
 REVIEW="${TARGET}/review.md"
 if [[ -f "$REVIEW" ]]; then
   echo "review.md already exists at ${REVIEW}"

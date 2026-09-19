@@ -118,6 +118,7 @@ run promote.sh plans/prom >/dev/null
 # --- 12 close without --force after all done ---
 for i in 1 2 3 4 5 6 7 8; do run task.sh plans/prom $i cancel x >/dev/null 2>&1 || true; done
 for i in 1 2 3 4; do run task.sh --file plan.md plans/prom $i cancel x >/dev/null 2>&1 || true; done
+sed -i.bak "s|^Current Status:.*|Current Status: Active: prom|" plans/context.md; rm -f plans/context.md.bak
 run close-plan.sh plans/prom >/dev/null && ok "close when clear" || bad "close when clear"
 
 # --- 13 double archive refuse ---
@@ -170,6 +171,7 @@ else
   ok "archive refuses open OVERVIEW.md"
 fi
 sed -i.bak 's/- \[ \]/- [x]/' plans/epic-d12/OVERVIEW.md
+sed -i.bak "s|^Current Status:.*|Current Status: Active: epic-d12|" plans/context.md; rm -f plans/context.md.bak
 run close-plan.sh plans/epic-d12 >/dev/null && ok "close-plan accepts resolved OVERVIEW.md" || bad "close-plan accepts resolved OVERVIEW.md"
 run archive.sh plans/epic-d12 >/dev/null && ok "archive accepts resolved OVERVIEW.md" || bad "archive accepts resolved OVERVIEW.md"
 

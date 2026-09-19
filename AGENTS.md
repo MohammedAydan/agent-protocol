@@ -106,6 +106,8 @@ When all tasks are `[x]` or `[-]`:
 1. `close-plan.sh plans/<name>` (creates `review.md`; scans `tasks.md`, `plan.md`, and `OVERVIEW.md` for open tasks)
 2. Append `SESSION_LOG.md` (what shipped, decisions, resume note)
 3. Optional: `archive.sh plans/<name>`
+4. Fill `review.md` `## Built` (T2/T3 required — close-plan refuses an empty one; T0.5/T1: one line in plan.md suffices)
+5. Commit after every closed plan: `git add -A && git commit -m "<type>(<scope>): <desc>"`
 
 Ending a T1+ feature with open tasks or no SESSION_LOG entry = incomplete.
 
