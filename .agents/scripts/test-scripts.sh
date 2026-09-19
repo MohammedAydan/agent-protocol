@@ -287,6 +287,17 @@ check "ps1 delegates init to init.sh" grep -q "init.sh" "$ROOT/bin/agent-protoco
 check ".gitignore ignores plans/*" grep -q "^plans/\*" "$ROOT/.gitignore"
 check ".gitignore whitelists context.md" grep -q "^!plans/context.md" "$ROOT/.gitignore"
 
+# OPT-1: T0.5 fast path (single file, no folder, no ceremony)
+check_exit0 "new T0.5" bash .agents/scripts/new-plan.sh T0.5 quick-foo
+check "T0.5 single file" test -f plans/_quick/quick-foo.md
+check "T0.5 no folder" test ! -d plans/quick-foo
+check "T0.5 has Task section" grep -q "^## Task" plans/_quick/quick-foo.md
+check "T0.5 has Verify section" grep -q "^## Verify" plans/_quick/quick-foo.md
+check "T0.5 not in Active Plans" bash -c "! grep 'Active Plans:' plans/context.md | grep -q quick-foo"
+check_out "resume lists quick" "quick] quick-foo" bash .agents/scripts/resume.sh
+check "doctor silent on _quick" bash -c "! bash .agents/scripts/doctor.sh 2>&1 | grep -q quick-foo"
+check_out "session-log --brief" "brief-note" bash .agents/scripts/session-log.sh --brief "brief-note"
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]

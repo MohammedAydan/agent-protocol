@@ -35,5 +35,14 @@ while IFS= read -r dir && [[ $c -lt 3 ]]; do
   done
 done < "$tmp"
 rm -f "$tmp"
+if [[ -d "$R/_quick" ]]; then
+  for qf in "$R"/_quick/*.md; do
+    [[ -f "$qf" ]] || continue
+    qline=$(grep -E '^\- \[ \]|^\- \[~\]' "$qf" 2>/dev/null | head -1 || true)
+    if [[ -n "$qline" ]]; then
+      echo "[quick] $(basename "$qf" .md): $qline"
+    fi
+  done
+fi
 if [[ $c -eq 0 ]]; then echo "(all clear)"; fi
 exit 0
