@@ -42,6 +42,7 @@ bash .agents/scripts/resume.sh
 bash -lc "bash .agents/scripts/task.sh plans/my-plan 1 start"
 ```
 Prefer **numeric** task specs (avoids quoting). Run scripts **sequentially** per plan folder (no parallel `task.sh` on the same folder). Do not paste bash `||` / `&&` / heredocs into PowerShell.
+Windows-specific recipes: `docs/WINDOWS.md`.
 
 ---
 
