@@ -305,6 +305,24 @@ check "slim T1 no Complexity line" bash -c "! grep -q 'Complexity' plans/slim-t1
 check "slim T1 keeps Tasks section" grep -q "^## Tasks" plans/slim-t1/plan.md
 check "T1 template <=10 lines" bash -c "[[ $(wc -l < .agents/templates/T1-plan.md) -le 10 ]]"
 
+# OPT-3: --quiet flags (clean fixture repo)
+QDIR=$(mktemp -d)
+cp -a "$ROOT/.agents" "$QDIR/.agents"
+cp -a "$ROOT/AGENTS.md" "$QDIR/AGENTS.md"
+(cd "$QDIR" && bash .agents/scripts/bootstrap.sh "Q" "test" >/dev/null 2>&1)
+check "quiet doctor <=5 lines" bash -c 'cd "$1" && [[ $(bash .agents/scripts/doctor.sh --quiet 2>&1 | wc -l) -le 5 ]]' _ "$QDIR"
+check "quiet resume <=5 lines" bash -c 'cd "$1" && [[ $(bash .agents/scripts/resume.sh --quiet 2>&1 | wc -l) -le 5 ]]' _ "$QDIR"
+check_out "quiet doctor clean marker" "checks passed" bash -c "cd '$QDIR' && bash .agents/scripts/doctor.sh --quiet"
+check "quiet status no headers" bash -c "! (cd '$QDIR' && bash .agents/scripts/status.sh --quiet 2>&1 | grep -q '===')"
+check_out "default resume unchanged" "SESSION RESUME" bash .agents/scripts/resume.sh
+check_out "default doctor unchanged" "Agent Protocol doctor" bash .agents/scripts/doctor.sh
+(cd "$QDIR" && bash .agents/scripts/new-plan.sh T1 qc >/dev/null 2>&1)
+(cd "$QDIR" && bash .agents/scripts/task.sh plans/qc 1 done >/dev/null 2>&1 && bash .agents/scripts/task.sh plans/qc 2 done >/dev/null 2>&1 && bash .agents/scripts/task.sh --acceptance plans/qc 1 done >/dev/null 2>&1)
+check_out "quiet close prints path" "review.md" bash -c "cd '$QDIR' && bash .agents/scripts/close-plan.sh --quiet plans/qc"
+(cd "$QDIR" && bash .agents/scripts/new-plan.sh T1 qt >/dev/null 2>&1)
+check_out "quiet task state line" "STARTED" bash -c "cd '$QDIR' && bash .agents/scripts/task.sh --quiet plans/qt 1 start"
+rm -rf "$QDIR"
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]

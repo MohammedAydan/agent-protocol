@@ -2,19 +2,24 @@
 # close-plan.sh — Create review.md stub; warn on unresolved tasks.
 # Usage: close-plan.sh <path-to-plan-folder>
 #        close-plan.sh --force <path>   # allow close even with open tasks
+#        close-plan.sh [-q|--quiet] <path>  # quiet: print only the review.md path
 
 set -euo pipefail
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  sed -n '2,5p' "$0"
+  sed -n '2,6p' "$0"
   exit 0
 fi
 
 FORCE=0
-if [[ "${1:-}" == "--force" ]]; then
-  FORCE=1
+QUIET=0
+while [[ "${1:-}" == "--force" || "${1:-}" == "-q" || "${1:-}" == "--quiet" ]]; do
+  case "$1" in
+    --force) FORCE=1 ;;
+    -q|--quiet) QUIET=1 ;;
+  esac
   shift
-fi
+done
 
 TARGET="${1:-}"
 [[ -z "$TARGET" || ! -d "$TARGET" ]] && { echo "Usage: close-plan.sh [--force] <plan-folder>"; exit 1; }
@@ -90,10 +95,11 @@ _remove_active_plan() {
     sed -i.bak "s|^Active Plans:.*|Active Plans: ${new_ap}|" plans/context.md
   fi
   rm -f plans/context.md.bak
-  echo "Active Plans updated (removed ${rel})"
+  [[ "${QUIET:-0}" -eq 0 ]] && echo "Active Plans updated (removed ${rel})"
 }
 _remove_active_plan "$TARGET"
 
+if [[ "$QUIET" -eq 1 ]]; then exit 0; fi
 echo ""
 echo "Finish manually (or let the agent):"
 echo "  1. Ensure all tasks are [x] or [-]"

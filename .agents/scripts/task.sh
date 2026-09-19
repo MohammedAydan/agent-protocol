@@ -6,6 +6,7 @@
 #   task.sh --file tasks.md <plan-folder> ...
 #   task.sh --acceptance <plan-folder> <n|text> done   # force plan.md (T2 acceptance)
 #   task.sh --section tasks|acceptance <plan-folder> <n|text> <action> [reason]
+#   task.sh [-q|--quiet] ...           # same output minus WARNING lines
 #
 # Rules:
 #   start → max ONE [~] per *file* being edited (and warn if other file has [~])
@@ -17,9 +18,11 @@ set -euo pipefail
 FILE_OVERRIDE=""
 FORCE_ACCEPTANCE=0
 SECTION_ARG=""
+QUIET=0
 while [[ "${1:-}" =~ ^- ]]; do
   case "$1" in
-    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -q|--quiet) QUIET=1; shift ;;
     --file) FILE_OVERRIDE="$2"; shift 2 ;;
     --acceptance) FORCE_ACCEPTANCE=1; shift ;;
     --section) SECTION_ARG="$2"; shift 2 ;;
@@ -29,7 +32,7 @@ done
 
 DIR="${1:-}"; SPEC="${2:-}"; ACTION="${3:-}"; REASON="${4:-}"
 [[ -z "$DIR" || -z "$SPEC" || -z "$ACTION" ]] && {
-  sed -n '2,14p' "$0"; exit 1; }
+  sed -n '2,15p' "$0"; exit 1; }
 
 RESOLVED_SECTION=""
 if [[ "$FORCE_ACCEPTANCE" -eq 1 ]]; then
@@ -148,7 +151,7 @@ case "$ACTION" in
     for otherf in "${DIR}/tasks.md" "${DIR}/plan.md"; do
       [[ -f "$otherf" && "$otherf" != "$FILE" ]] || continue
       if [[ $(active_tilde "$otherf") -ge 1 ]]; then
-        echo "WARNING: ${otherf} also has [~] — finish it before parallel work in same plan"
+        [[ "$QUIET" -eq 0 ]] && echo "WARNING: ${otherf} also has [~] — finish it before parallel work in same plan"
       fi
     done
     set_marker '~'
