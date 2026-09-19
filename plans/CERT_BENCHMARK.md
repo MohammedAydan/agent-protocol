@@ -64,3 +64,22 @@
 
 ## Certification Sign-off
 Agent Protocol v1.1.0 satisfies all architectural requirements, dogfood lifecycles, and verification gates. The codebase is hardened for cross-platform Windows, Linux, and macOS usage with zero backwards-incompatible regressions.
+
+---
+
+## v1.2.0 Efficiency Seal (appended 2026-09-19, branch `perf/v1.2.0-efficiency`)
+
+Full evidence: `benchmarks/v1.2.0/REPORT.md` (A/B re-run) and
+`benchmarks/v1.2.0/BASELINE_v1.1.0.md` (fresh v1.1.0 baseline).
+
+- OPT-1..OPT-7 shipped, one commit each; smoke 50 → 84, stress 42 → 44,
+  `lint-encoding.sh` exit 0; defaults byte-identical to v1.1.0.
+- A/B (CSV→JSON, same spec sha): FW arm picked **T0.5** (1136 B single
+  file, −52% artifact bytes vs v1.1.0 baseline); blind score **93 vs 83**
+  (+10); review.md **filled**, context.md **live**, **2 commits** —
+  all three v1.1.0 partial-compliances closed.
+- Wall-clock: FW 1743 s vs no-FW 1346 s (+397 s, ratio 1.29× — best ratio
+  of three runs). Absolute-second target (≤27 s overhead) MISSED due to
+  harness/model latency variance (no-FW arm alone ranged 46 → 1346 s
+  across runs); see ADR-010. No tag until the release owner dispositions
+  this variance.

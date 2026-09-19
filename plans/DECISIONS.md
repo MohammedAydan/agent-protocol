@@ -142,3 +142,24 @@
   fill it per `AGENTS.md`); re-close and dirty-context closes are
   refused with fix instructions. Existing suites set context status
   before non-force closes.
+
+## ADR-010 — v1.2.0 wall-clock variance (criterion 1 disposition)
+
+- **Date:** 2026-09-19
+- **Status:** Proposed (release owner to disposition; NO v1.2.0 tag
+  until resolved)
+- **Context:** Phase 5 criterion 1 requires FW overhead (A−B) ≤27 s.
+  Measured: +397 s (1743 vs 1346). But the no-framework arm alone
+  measured 46 s, 169 s, and 1346 s across three identical-spec runs —
+  run-to-run jitter (model/harness latency; both v1.2.0 arms exceeded
+  the 20-min budget) exceeds any framework-attributable cost by 10×.
+- **Decision (proposed):** Record criterion 1 as MISSED-on-seconds with
+  documented jitter; ship-relevant signals are the overhead ratio
+  (1.29×, best of three runs), artifact bytes (−52%), LOC overhead
+  (+6.2%, within target), and 3/3 compliance fixes.
+- **Alternatives considered:** (a) Re-run A/B until seconds pass —
+  expensive, same jitter risk, single-trial statistics stay weak either
+  way. (b) Hold v1.2.0 untagged — safe default if the owner wants a
+  tighter timing claim.
+- **Consequences:** Tag `v1.2.0` requires explicit owner sign-off on
+  this ADR.

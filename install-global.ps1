@@ -64,7 +64,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$ps1Path" %*
   }
   $env:Path = $shimDir + ";" + $env:Path
 
-  "1.1.0" | Set-Content -Encoding ascii (Join-Path $Dest "VERSION")
+  "1.2.0" | Set-Content -Encoding ascii (Join-Path $Dest "VERSION")
 
   Write-Host ""
   Write-Host "=== Installed (PowerShell-native, Git optional) ===" -ForegroundColor Green
