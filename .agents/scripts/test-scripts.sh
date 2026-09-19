@@ -368,6 +368,11 @@ check "AGENTS.md tier cost table" grep -q "Typical setup cost" "$ROOT/AGENTS.md"
 check "SKILL.md documents T0.5" grep -q "T0.5" "$ROOT/.agents/skills/plan-manager/SKILL.md"
 check_out "new-plan help prefers T0.5" "prefer it over T1" bash .agents/scripts/new-plan.sh --help
 
+# OPT-7: measure-overhead.sh token-proxy audit
+bash .agents/scripts/new-plan.sh T1 measure-fx >/dev/null 2>&1
+check_out "measure-overhead line" "plan=measure-fx bytes=" bash .agents/scripts/measure-overhead.sh plans/measure-fx
+check_out "protocol measure dispatches" "plan=measure-fx bytes=" bash .agents/scripts/protocol.sh measure plans/measure-fx
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
