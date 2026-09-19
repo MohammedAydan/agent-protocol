@@ -1,6 +1,4 @@
-# agent-protocol.ps1 — Windows-native CLI (no Git Bash required for core commands)
-# Installed under %LOCALAPPDATA%\agent-protocol and invoked via agent-protocol.cmd
-
+# agent-protocol.ps1 - Windows CLI (no Git required for core commands)
 param(
   [Parameter(Position = 0)]
   [string]$Command = "help",
@@ -25,20 +23,21 @@ function Get-Bash {
   return $null
 }
 
+function Write-Utf8File([string]$Path, [string[]]$Lines) {
+  $dir = Split-Path $Path -Parent
+  if ($dir -and -not (Test-Path $dir)) {
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+  }
+  $Lines | Set-Content -Path $Path -Encoding utf8
+}
+
 function Show-Help {
-  @"
-Agent Protocol CLI (Windows)
-
-  agent-protocol version
-  agent-protocol home
-  agent-protocol init [--adapters none|all|claude,cursor] [--force]
-  agent-protocol update [--force]
-  agent-protocol upgrade
-  agent-protocol help
-
-With Git Bash installed, also:
-  agent-protocol doctor | status | resume | test | stress | new | task | ...
-"@
+  Write-Host "Agent Protocol CLI (Windows)"
+  Write-Host "  version | home | help"
+  Write-Host "  init [--adapters none|all|claude,cursor] [--force]"
+  Write-Host "  update [--force]"
+  Write-Host "  upgrade"
+  Write-Host "With Git Bash: doctor status resume test stress new task ..."
 }
 
 function Update-Project {
@@ -49,45 +48,54 @@ function Update-Project {
     exit 1
   }
   if (-not (Test-Path (Join-Path $Pkg "AGENTS.md"))) {
-    Write-Host "ERROR: global package missing at $Pkg — run install-global.ps1" -ForegroundColor Red
+    Write-Host "ERROR: global package missing at $Pkg" -ForegroundColor Red
     exit 1
   }
-  if ((Resolve-Path $Pkg).Path -eq (Resolve-Path $target).Path) {
-    Write-Host "ERROR: package == project; reinstall global package" -ForegroundColor Red
+  $pkgFull = (Resolve-Path $Pkg).Path
+  $tgtFull = (Resolve-Path $target).Path
+  if ($pkgFull -eq $tgtFull) {
+    Write-Host "ERROR: package path equals project path" -ForegroundColor Red
     exit 1
   }
   Write-Host "=== Update protocol in project ===" -ForegroundColor Cyan
   Write-Host "  package: $Pkg"
   Write-Host "  target : $target"
-  Write-Host "  force  : $Force"
 
   Copy-Item -Force (Join-Path $Pkg "AGENTS.md") (Join-Path $target "AGENTS.md")
   Write-Host "  + AGENTS.md"
+
   $srcScripts = Join-Path $Pkg ".agents\scripts"
   $dstScripts = Join-Path $target ".agents\scripts"
   New-Item -ItemType Directory -Force -Path $dstScripts | Out-Null
-  Copy-Item -Recurse -Force "$srcScripts\*" $dstScripts
-  Write-Host "  + .agents/scripts/"
-  foreach ($sub in @("skills","agents","rules","templates")) {
+  if (Test-Path $srcScripts) {
+    Copy-Item -Recurse -Force (Join-Path $srcScripts "*") $dstScripts
+    Write-Host "  + .agents/scripts/"
+  }
+  foreach ($sub in @("skills", "agents", "rules", "templates")) {
     $s = Join-Path $Pkg ".agents\$sub"
     if (Test-Path $s) {
       $d = Join-Path $target ".agents\$sub"
       New-Item -ItemType Directory -Force -Path $d | Out-Null
-      Copy-Item -Recurse -Force "$s\*" $d
+      Copy-Item -Recurse -Force (Join-Path $s "*") $d
       Write-Host "  + .agents/$sub/"
     }
   }
-  "1.0.0" | Set-Content -Encoding ascii (Join-Path $target ".agents\PROTOCOL_VERSION")
+  Write-Utf8File (Join-Path $target ".agents\PROTOCOL_VERSION") @("1.0.0")
+
   if ($Force) {
-    if (Test-Path (Join-Path $Pkg "adapters")) {
+    $ad = Join-Path $Pkg "adapters"
+    if (Test-Path $ad) {
       $d = Join-Path $target "adapters"
       New-Item -ItemType Directory -Force -Path $d | Out-Null
-      Copy-Item -Recurse -Force (Join-Path $Pkg "adapters\*") $d
+      Copy-Item -Recurse -Force (Join-Path $ad "*") $d
       Write-Host "  + adapters/"
     }
-    foreach ($f in @("CLAUDE.md","GEMINI.md")) {
+    foreach ($f in @("CLAUDE.md", "GEMINI.md")) {
       $s = Join-Path $Pkg $f
-      if (Test-Path $s) { Copy-Item -Force $s (Join-Path $target $f); Write-Host "  + $f" }
+      if (Test-Path $s) {
+        Copy-Item -Force $s (Join-Path $target $f)
+        Write-Host "  + $f"
+      }
     }
   }
   Write-Host "  keep: plans/ (untouched)"
@@ -97,78 +105,83 @@ function Update-Project {
 function Install-Init {
   $adapters = "none"
   $force = $false
-  $name = Split-Path (Get-Location).Path -Leaf
   $i = 0
   while ($i -lt $Rest.Count) {
     switch ($Rest[$i]) {
-      "--adapters" { $i++; $adapters = $Rest[$i] }
+      "--adapters" { $i++; if ($i -lt $Rest.Count) { $adapters = $Rest[$i] } }
       "--force" { $force = $true }
-      "--here" { }
-      "--non-interactive" { }
-      "--name" { $i++; $name = $Rest[$i] }
       default { }
     }
     $i++
   }
-  $env:AP_ADAPTERS = $adapters
-  if ($force) { $env:AP_FORCE = "1" }
-  $env:AP_NONINTERACTIVE = "1"
-  # Re-use install-remote.ps1 logic by invoking packaged copy if present
-  $remote = Join-Path $Pkg "install-remote.ps1"
-  if (Test-Path $remote) {
-    # Minimal inline: copy core files from global package
-    $target = (Get-Location).Path
-    Write-Host "=== init from global package ===" -ForegroundColor Cyan
-    Copy-Item -Force (Join-Path $Pkg "AGENTS.md") (Join-Path $target "AGENTS.md")
-    if (Test-Path (Join-Path $target ".agents")) {
-      if ($force) { Remove-Item -Recurse -Force (Join-Path $target ".agents") }
-      else { Write-Host "  skip: .agents exists (use --force)" }
-    }
-    if (-not (Test-Path (Join-Path $target ".agents"))) {
-      Copy-Item -Recurse -Force (Join-Path $Pkg ".agents") (Join-Path $target ".agents")
-    } else {
-      # refresh scripts
-      Copy-Item -Recurse -Force (Join-Path $Pkg ".agents\scripts\*") (Join-Path $target ".agents\scripts")
-    }
-    if ($adapters -match "all|claude") {
-      Copy-Item -Force (Join-Path $Pkg "CLAUDE.md") (Join-Path $target "CLAUDE.md") -ErrorAction SilentlyContinue
-    }
-    if ($adapters -match "all|gemini") {
-      Copy-Item -Force (Join-Path $Pkg "GEMINI.md") (Join-Path $target "GEMINI.md") -ErrorAction SilentlyContinue
-    }
-    if (-not (Test-Path (Join-Path $target "plans\context.md"))) {
-      New-Item -ItemType Directory -Force -Path (Join-Path $target "plans") | Out-Null
-      @"
-# Project Context
 
-Purpose: TBD
-Current Status: Bootstrapped
-Critical Constraints: TBD
-Active Plans: none
-Known Issues: none
-"@ | Set-Content -Encoding utf8 (Join-Path $target "plans\context.md")
-      @"
-# Session Log
-
-## $(Get-Date -Format 'yyyy-MM-dd HH:mm') UTC — Bootstrap
-- Done: init via agent-protocol (Windows)
-- Resume: classify first work T0–T3
-"@ | Set-Content -Encoding utf8 (Join-Path $target "plans\SESSION_LOG.md")
-      foreach ($f in @("ARCH.md","TECH_STACK.md","DECISIONS.md","PATTERNS.md")) {
-        "# $f`n" | Set-Content -Encoding utf8 (Join-Path $target "plans\$f")
-      }
-    }
-    Write-Host "=== Ready (README/app source untouched) ===" -ForegroundColor Green
-  } else {
-    Write-Host "ERROR: package incomplete at $Pkg" -ForegroundColor Red
+  $target = (Get-Location).Path
+  if (-not (Test-Path (Join-Path $Pkg "AGENTS.md"))) {
+    Write-Host "ERROR: global package missing at $Pkg - re-run install-global.ps1" -ForegroundColor Red
     exit 1
   }
+
+  Write-Host "=== init from global package ===" -ForegroundColor Cyan
+  Copy-Item -Force (Join-Path $Pkg "AGENTS.md") (Join-Path $target "AGENTS.md")
+  Write-Host "  + AGENTS.md"
+
+  $dstAgents = Join-Path $target ".agents"
+  if ((Test-Path $dstAgents) -and $force) {
+    Remove-Item -Recurse -Force $dstAgents
+  }
+  if (-not (Test-Path $dstAgents)) {
+    Copy-Item -Recurse -Force (Join-Path $Pkg ".agents") $dstAgents
+    Write-Host "  + .agents/"
+  } else {
+    $ds = Join-Path $dstAgents "scripts"
+    New-Item -ItemType Directory -Force -Path $ds | Out-Null
+    Copy-Item -Recurse -Force (Join-Path $Pkg ".agents\scripts\*") $ds
+    Write-Host "  + .agents/scripts/ (refreshed)"
+  }
+
+  if ($adapters -match "all|claude") {
+    $s = Join-Path $Pkg "CLAUDE.md"
+    if (Test-Path $s) { Copy-Item -Force $s (Join-Path $target "CLAUDE.md"); Write-Host "  + CLAUDE.md" }
+  }
+  if ($adapters -match "all|gemini") {
+    $s = Join-Path $Pkg "GEMINI.md"
+    if (Test-Path $s) { Copy-Item -Force $s (Join-Path $target "GEMINI.md"); Write-Host "  + GEMINI.md" }
+  }
+
+  $ctx = Join-Path $target "plans\context.md"
+  if (-not (Test-Path $ctx)) {
+    $plans = Join-Path $target "plans"
+    New-Item -ItemType Directory -Force -Path $plans | Out-Null
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm"
+    Write-Utf8File $ctx @(
+      "# Project Context"
+      ""
+      "Purpose: TBD"
+      "Current Status: Bootstrapped"
+      "Critical Constraints: TBD"
+      "Active Plans: none"
+      "Known Issues: none"
+    )
+    Write-Utf8File (Join-Path $plans "SESSION_LOG.md") @(
+      "# Session Log"
+      ""
+      "## $ts UTC - Bootstrap"
+      "- Done: init via agent-protocol (Windows)"
+      "- Resume: classify first work T0-T3"
+    )
+    foreach ($f in @("ARCH.md", "TECH_STACK.md", "DECISIONS.md", "PATTERNS.md")) {
+      Write-Utf8File (Join-Path $plans $f) @("# $f", "")
+    }
+    Write-Host "  + plans/"
+  }
+
+  Write-Host "=== Ready (README and app source untouched) ===" -ForegroundColor Green
 }
 
 function Upgrade-Global {
   Write-Host "=== Upgrade global package ===" -ForegroundColor Cyan
   $url = "https://raw.githubusercontent.com/$Owner/$Repo/$Ref/install-global.ps1"
-  Write-Host "  re-running: $url"
+  Write-Host "  $url"
   $script = Invoke-RestMethod -Uri $url
   Invoke-Expression $script
 }
@@ -180,8 +193,9 @@ switch ($Command.ToLower()) {
   "version" {
     Write-Host "CLI: 1.0.0 (Windows PowerShell)"
     Write-Host "PKG: $Pkg"
-    if (Test-Path (Join-Path $Pkg "VERSION")) {
-      Write-Host "VERSION file: $((Get-Content (Join-Path $Pkg 'VERSION') -Raw).Trim())"
+    $vf = Join-Path $Pkg "VERSION"
+    if (Test-Path $vf) {
+      Write-Host ("VERSION file: " + ((Get-Content $vf -Raw).Trim()))
     }
   }
   "home" { Write-Host $Pkg }
@@ -195,9 +209,9 @@ switch ($Command.ToLower()) {
   default {
     $bash = Get-Bash
     if (-not $bash) {
-      Write-Host "Command '$Command' needs Git Bash for .sh scripts." -ForegroundColor Yellow
+      Write-Host "Command '$Command' needs Git Bash." -ForegroundColor Yellow
       Write-Host "Install: https://git-scm.com/download/win"
-      Write-Host "Or use: version | update | upgrade | init (no bash required)"
+      Write-Host "Or use without Git: version | home | init | update | upgrade | help"
       exit 1
     }
     $cli = Join-Path $Pkg "bin\agent-protocol"
@@ -205,7 +219,6 @@ switch ($Command.ToLower()) {
       Write-Host "ERROR: missing $cli" -ForegroundColor Red
       exit 1
     }
-    $argLine = (@($Command) + $Rest) -join ' '
     & $bash $cli $Command @Rest
     exit $LASTEXITCODE
   }
