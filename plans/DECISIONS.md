@@ -146,8 +146,7 @@
 ## ADR-010 — v1.2.0 wall-clock variance (criterion 1 disposition)
 
 - **Date:** 2026-09-19
-- **Status:** Proposed (release owner to disposition; NO v1.2.0 tag
-  until resolved)
+- **Status:** Accepted (release owner signed 2026-09-19; tag v1.2.0 proceeds)
 - **Context:** Phase 5 criterion 1 requires FW overhead (A−B) ≤27 s.
   Measured: +397 s (1743 vs 1346). But the no-framework arm alone
   measured 46 s, 169 s, and 1346 s across three identical-spec runs —
