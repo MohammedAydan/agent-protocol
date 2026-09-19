@@ -218,3 +218,41 @@ $ cat plans/promo-baseline/tasks.md
 
 BASELINE: all 3 tasks survive promote. D1 (section logic) + D7 (template
 comment) must not regress this.
+
+## D8 (update-path RED)
+
+Scratch consumers:
+- `$ROOT = "C:/Users/moham/AppData/Local/Temp/ap-red-v2"`
+- Seed command: `bash "$pkg/bin/agent-protocol" init --adapters none` into `$ROOT/seed`
+- Copies: identical duplicate trees created at `$ROOT/consumer-u-bash` and `$ROOT/consumer-u-ps`
+- Update commands:
+  * In `consumer-u-bash`: `bash "$pkg/bin/agent-protocol" update`
+  * In `consumer-u-ps`: `powershell -NoProfile -ExecutionPolicy Bypass -File "$pkg\bin\agent-protocol.ps1" update`
+
+Raw diff output (`diff -r consumer-u-bash consumer-u-ps`):
+```
+diff -r C:/Users/moham/AppData/Local/Temp/ap-red-v2/consumer-u-bash/.agents/PROTOCOL_VERSION C:/Users/moham/AppData/Local/Temp/ap-red-v2/consumer-u-ps/.agents/PROTOCOL_VERSION
+1c1
+< 1.0.0
+---
+> ﻿1.0.0
+exit: 1
+```
+
+File and encoding inspection:
+```
+$ file consumer-u-bash/.agents/PROTOCOL_VERSION consumer-u-ps/.agents/PROTOCOL_VERSION
+C:/Users/moham/AppData/Local/Temp/ap-red-v2/consumer-u-bash/.agents/PROTOCOL_VERSION: ASCII text
+C:/Users/moham/AppData/Local/Temp/ap-red-v2/consumer-u-ps/.agents/PROTOCOL_VERSION:   Unicode text, UTF-8 (with BOM) text, with CRLF line terminators
+exit: 0
+
+$ xxd consumer-u-bash/.agents/PROTOCOL_VERSION
+00000000: 312e 302e 300a                           1.0.0.
+exit: 0
+
+$ xxd consumer-u-ps/.agents/PROTOCOL_VERSION
+00000000: efbb bf31 2e30 2e30 0d0a                 ...1.0.0..
+exit: 0
+```
+
+BUG: PowerShell CLI `update` path writes `.agents/PROTOCOL_VERSION` with UTF-8 BOM (`ef bb bf`) and CRLF, while bash CLI `update` writes ASCII LF (`31 2e 30 2e 30 0a`). Furthermore, PowerShell CLI `update` duplicates update logic rather than delegating to bash when Git Bash is present.
