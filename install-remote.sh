@@ -19,7 +19,7 @@ set -euo pipefail
 
 OWNER="${AGENT_PROTOCOL_OWNER:-MohammedAydan}"
 REPO="${AGENT_PROTOCOL_REPO:-agent-protocol}"
-REF="${AGENT_PROTOCOL_REF:-v1.0.0}"
+REF="${AGENT_PROTOCOL_REF:-main}"
 ARCHIVE_URL="${AGENT_PROTOCOL_URL:-}"
 
 ARGS=()
@@ -34,7 +34,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$ARCHIVE_URL" ]]; then
-  ARCHIVE_URL="https://github.com/${OWNER}/${REPO}/archive/refs/tags/${REF}.tar.gz"
+  if [[ "$REF" == "main" || "$REF" == "master" ]]; then
+    ARCHIVE_URL="https://github.com/${OWNER}/${REPO}/archive/refs/heads/${REF}.tar.gz"
+  else
+    ARCHIVE_URL="https://github.com/${OWNER}/${REPO}/archive/refs/tags/${REF}.tar.gz"
+  fi
 fi
 
 case "$ARCHIVE_URL" in

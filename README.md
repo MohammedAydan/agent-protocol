@@ -35,62 +35,22 @@ Always choose the **lowest viable tier**. Unsure → ask the human.
 
 ## Install (new or existing project)
 
-Safe by default: **never replaces your `README.md`, source code, or app config.**
-
 **Repo:** https://github.com/MohammedAydan/agent-protocol
 
-### One-liner from GitHub
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
+```
+
+### macOS / Linux / Git Bash / WSL
 
 ```bash
-# Pin a tag (recommended)
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/v1.0.0/install-remote.sh \
-  | bash -s -- --here --adapters all --non-interactive
-
-# From main branch
 curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh \
   | bash -s -- --here --adapters all --non-interactive
-
-# Only Claude + Cursor
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/v1.0.0/install-remote.sh \
-  | bash -s -- --here --adapters claude,cursor --non-interactive
 ```
 
-### Local clone (safest)
-
-```bash
-git clone --depth 1 --branch v1.0.0 https://github.com/MohammedAydan/agent-protocol.git /tmp/agent-protocol
-cd /path/to/your-app
-bash /tmp/agent-protocol/init --here --adapters all
-```
-
-### Existing project (from a local copy of this package)
-
-```bash
-bash /path/to/agent-protocol/init --here
-bash /path/to/agent-protocol/init --here --adapters claude,cursor --non-interactive
-bash /path/to/agent-protocol/init --here --force   # refresh protocol files only
-```
-
-`--adapters`: `all` | `none` | `claude,cursor,copilot,windsurf,cline,roo,codex,gemini`  
-Without `--adapters` on a TTY → interactive menu.
-
-### What is / is not touched
-
-| Installed | Never modified |
-|-----------|----------------|
-| `AGENTS.md` | Your `README.md` |
-| `.agents/` | Application source |
-| Selected harness mirrors | `package.json`, lockfiles |
-| `plans/` (if missing) | `.git/` |
-
-### After install
-
-```bash
-bash .agents/scripts/resume.sh
-bash .agents/scripts/protocol.sh new T1 first-feature
-```
-
-See [INSTALL.md](INSTALL.md) and [SECURITY.md](SECURITY.md).
+Full options: [INSTALL.md](INSTALL.md) · Security: [SECURITY.md](SECURITY.md)
 
 
 ## Layout

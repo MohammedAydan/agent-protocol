@@ -1,54 +1,36 @@
-# Install Agent Protocol
+# Install
 
-**Repository:** https://github.com/MohammedAydan/agent-protocol
+**Repo:** https://github.com/MohammedAydan/agent-protocol
 
-## One-liner (into current project)
+## Windows — أقصر أمر
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/v1.0.0/install-remote.sh \
-  | bash -s -- --here --adapters all --non-interactive
+PowerShell داخل مجلد مشروعك:
+
+```powershell
+irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
 ```
 
-From `main` branch:
+Harness محدد:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh \
-  | bash -s -- --here --adapters all --non-interactive
+```powershell
+$env:AP_ADAPTERS="claude,cursor"; irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
 ```
 
-## Choose harnesses
+أو تحميل ثم تشغيل:
 
-```bash
-# Interactive menu
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/v1.0.0/install-remote.sh \
-  | bash -s -- --here
-
-# Claude + Cursor only
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/v1.0.0/install-remote.sh \
-  | bash -s -- --here --adapters claude,cursor --non-interactive
-
-# AGENTS.md only (no tool-specific files)
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/v1.0.0/install-remote.sh \
-  | bash -s -- --here --adapters none --non-interactive
+```powershell
+iwr -useb https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 -OutFile ap.ps1
+powershell -ExecutionPolicy Bypass -File .\ap.ps1
 ```
 
-## Local clone (safest)
+## macOS / Linux / Git Bash / WSL
 
 ```bash
-git clone --depth 1 --branch v1.0.0 https://github.com/MohammedAydan/agent-protocol.git /tmp/agent-protocol
-cd /path/to/your-app
-bash /tmp/agent-protocol/init --here --adapters all
+curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh | bash -s -- --here --adapters all --non-interactive
 ```
 
-## What is never touched
+## ملاحظات
 
-Your `README.md`, application source, `package.json`, and `.git/` are **not** modified.
-
-Only protocol paths are added: `AGENTS.md`, `.agents/`, `adapters/`, `plans/`, and selected harness mirrors.
-
-## After install
-
-```bash
-bash .agents/scripts/resume.sh
-bash .agents/scripts/protocol.sh new T1 first-feature
-```
+- **لا يستبدل** `README.md` ولا كود التطبيق.
+- على Windows الأوامر الكاملة للشُل تحتاج [Git for Windows](https://git-scm.com/download/win)؛ التثبيت نفسه يعمل بـ PowerShell فقط.
+- الفرع الافتراضي: `main` (حتى تنشئ tag `v1.0.0`).
