@@ -322,6 +322,19 @@ check_out "quiet close prints path" "review.md" bash -c "cd '$QDIR' && bash .age
 (cd "$QDIR" && bash .agents/scripts/new-plan.sh T1 qt >/dev/null 2>&1)
 check_out "quiet task state line" "STARTED" bash -c "cd '$QDIR' && bash .agents/scripts/task.sh --quiet plans/qt 1 start"
 rm -rf "$QDIR"
+# OPT-4: task.sh --batch (one invocation for N ops, identical to sequential)
+bash .agents/scripts/new-plan.sh T1 batch-a >/dev/null 2>&1
+bash .agents/scripts/new-plan.sh T1 batch-b >/dev/null 2>&1
+check_exit0 "batch run exits 0" bash -c "printf '1 start\n1 done\n2 start\n2 done\n' | bash .agents/scripts/task.sh --batch plans/batch-a"
+check "batch completes 2 tasks" bash -c '[[ $(grep -c "^- \[x\] " plans/batch-a/plan.md) -eq 2 ]]'
+bash .agents/scripts/task.sh plans/batch-b 1 start >/dev/null 2>&1
+bash .agents/scripts/task.sh plans/batch-b 1 done >/dev/null 2>&1
+bash .agents/scripts/task.sh plans/batch-b 2 start >/dev/null 2>&1
+bash .agents/scripts/task.sh plans/batch-b 2 done >/dev/null 2>&1
+grep -E '^- \[.\] ' plans/batch-a/plan.md > ba.txt
+grep -E '^- \[.\] ' plans/batch-b/plan.md > bb.txt
+check "batch equals sequential" diff ba.txt bb.txt
+rm -f ba.txt bb.txt
 
 echo ""
 echo "Results: $pass passed, $fail failed"

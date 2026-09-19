@@ -7,6 +7,7 @@
 #   task.sh --acceptance <plan-folder> <n|text> done   # force plan.md (T2 acceptance)
 #   task.sh --section tasks|acceptance <plan-folder> <n|text> <action> [reason]
 #   task.sh [-q|--quiet] ...           # same output minus WARNING lines
+#   printf '1 start\n1 done\n' | task.sh [--file ...] [--section ...] --batch <plan-folder>
 #
 # Rules:
 #   start → max ONE [~] per *file* being edited (and warn if other file has [~])
@@ -19,10 +20,12 @@ FILE_OVERRIDE=""
 FORCE_ACCEPTANCE=0
 SECTION_ARG=""
 QUIET=0
+BATCH=0
 while [[ "${1:-}" =~ ^- ]]; do
   case "$1" in
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     -q|--quiet) QUIET=1; shift ;;
+    --batch) BATCH=1; shift ;;
     --file) FILE_OVERRIDE="$2"; shift 2 ;;
     --acceptance) FORCE_ACCEPTANCE=1; shift ;;
     --section) SECTION_ARG="$2"; shift 2 ;;
@@ -30,9 +33,37 @@ while [[ "${1:-}" =~ ^- ]]; do
   esac
 done
 
+if [[ "$BATCH" -eq 1 ]]; then
+  BDIR="${1:-}"
+  [[ -z "$BDIR" ]] && { echo "Usage: task.sh [--file F] [--section S] [--acceptance] [-q] --batch <plan-folder> < stdin(list of '<n> <action> [reason]')"; exit 1; }
+  EXTRA=()
+  [[ -n "$FILE_OVERRIDE" ]] && EXTRA+=(--file "$FILE_OVERRIDE")
+  [[ "$FORCE_ACCEPTANCE" -eq 1 ]] && EXTRA+=(--acceptance)
+  [[ -n "$SECTION_ARG" ]] && EXTRA+=(--section "$SECTION_ARG")
+  [[ "$QUIET" -eq 1 ]] && EXTRA+=(-q)
+  brc=0
+  while IFS= read -r bline || [[ -n "$bline" ]]; do
+    [[ -z "$bline" ]] && continue
+    # shellcheck disable=SC2086
+    set -- $bline
+    bspec="${1:-}"; baction="${2:-}"; shift 2 || true
+    if [[ -z "$bspec" || -z "$baction" ]]; then
+      echo "ERROR: bad batch line (want '<n> <action> [reason]'): $bline"
+      brc=1
+      break
+    fi
+    if ! bash "$0" "${EXTRA[@]}" "$BDIR" "$bspec" "$baction" "$@"; then
+      echo "BATCH stopped at: $bline"
+      brc=1
+      break
+    fi
+  done
+  exit "$brc"
+fi
+
 DIR="${1:-}"; SPEC="${2:-}"; ACTION="${3:-}"; REASON="${4:-}"
 [[ -z "$DIR" || -z "$SPEC" || -z "$ACTION" ]] && {
-  sed -n '2,15p' "$0"; exit 1; }
+  sed -n '2,16p' "$0"; exit 1; }
 
 RESOLVED_SECTION=""
 if [[ "$FORCE_ACCEPTANCE" -eq 1 ]]; then

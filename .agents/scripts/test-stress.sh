@@ -198,6 +198,16 @@ else
   bad "promote failed to create tasks/context"
 fi
 
+# --- OPT-4: --batch preserves one-[~] invariant (stops on conflict) ---
+run new-plan.sh T1 batch-s >/dev/null
+if printf '1 start\n2 start\n' | run task.sh --batch plans/batch-s 2>/dev/null; then
+  bad "batch double-start should fail"
+else
+  ok "batch double-start refused"
+fi
+tilde_count=$(grep -cE '^- \[~\] ' plans/batch-s/plan.md || true)
+if [[ "$tilde_count" -eq 1 ]]; then ok "batch stopped after conflict (one [~])"; else bad "batch state after conflict: [~]=$tilde_count"; fi
+
 echo ""
 echo "STRESS Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
