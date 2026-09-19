@@ -48,7 +48,9 @@ Windows-specific recipes: `docs/WINDOWS.md`.
 
 ## Adaptive planning (T0–T3)
 
-**Lowest viable tier.**
+**Lowest viable tier. Default: a task with ≤3 files, one decision, and ≤30 min
+MUST use T0.5 (single inline checklist, no directory, no multi-script chain,
+no review ceremony, no blocking multi-file checks).**
 
 | Tier  | Typical setup cost | Use when |
 |-------|--------------------|----------|

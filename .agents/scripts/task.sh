@@ -36,29 +36,202 @@ done
 if [[ "$BATCH" -eq 1 ]]; then
   BDIR="${1:-}"
   [[ -z "$BDIR" ]] && { echo "Usage: task.sh [--file F] [--section S] [--acceptance] [-q] --batch <plan-folder> < stdin(list of '<n> <action> [reason]')"; exit 1; }
-  EXTRA=()
-  [[ -n "$FILE_OVERRIDE" ]] && EXTRA+=(--file "$FILE_OVERRIDE")
-  [[ "$FORCE_ACCEPTANCE" -eq 1 ]] && EXTRA+=(--acceptance)
-  [[ -n "$SECTION_ARG" ]] && EXTRA+=(--section "$SECTION_ARG")
-  [[ "$QUIET" -eq 1 ]] && EXTRA+=(-q)
+  # OPT-4 REVISION (audit): in-memory batch — resolve target file ONCE,
+  # load into array, apply all transitions in-process, single file write,
+  # zero sub-process forks per task item (no bash re-invocation, no
+  # grep/sed/awk per item). Parity with sequential calls verified by
+  # test-scripts.sh "batch equals sequential".
+  _B_RESOLVED_SECTION=""
+  if [[ "$FORCE_ACCEPTANCE" -eq 1 ]]; then
+    _B_RESOLVED_SECTION="acceptance"
+  elif [[ -n "$SECTION_ARG" ]]; then
+    case "$SECTION_ARG" in
+      acceptance) _B_RESOLVED_SECTION="acceptance" ;;
+      tasks) _B_RESOLVED_SECTION="tasks" ;;
+      *) echo "ERROR: invalid section: $SECTION_ARG (expected tasks|acceptance)"; exit 1 ;;
+    esac
+  fi
+  _B_FILE=""
+  _B_TARGET_SECTION=""
+  if [[ "$_B_RESOLVED_SECTION" == "acceptance" ]]; then
+    _B_FILE="${BDIR}/plan.md"
+    _B_TARGET_SECTION="Acceptance"
+  elif [[ -n "$FILE_OVERRIDE" ]]; then
+    case "$FILE_OVERRIDE" in
+      plan.md|tasks.md) _B_FILE="${BDIR}/${FILE_OVERRIDE}" ;;
+      *) _B_FILE="$FILE_OVERRIDE" ;;
+    esac
+    if [[ "$_B_RESOLVED_SECTION" == "tasks" && "$_B_FILE" == *"plan.md" ]]; then
+      _B_TARGET_SECTION="Tasks"
+    fi
+  else
+    for cand in "${BDIR}/tasks.md" "${BDIR}/plan.md"; do
+      if [[ -f "$cand" ]]; then
+        _B_FILE="$cand"
+        break
+      fi
+    done
+    if [[ -n "$_B_FILE" && "$_B_FILE" == *"plan.md" ]]; then
+      # Single grep (one fork total, not per item) to detect Tasks section.
+      if grep -qi '^##[[:space:]]*tasks' "$_B_FILE"; then
+        _B_TARGET_SECTION="Tasks"
+      fi
+    fi
+  fi
+  [[ -n "$_B_FILE" && -f "$_B_FILE" ]] || { echo "ERROR: no tasks.md/plan.md in ${BDIR}"; exit 1; }
+  # Load file once.
+  _B_LINES=()
+  while IFS= read -r _bl || [[ -n "$_bl" ]]; do
+    _B_LINES+=("$_bl")
+  done < "$_B_FILE"
+  # Build ordered checkbox index (0-based array positions) within scope.
+  _B_BOX_POS=()
+  _b_in_sec=0
+  _b_has_scope=0
+  [[ -n "$_B_TARGET_SECTION" ]] && _b_has_scope=1
+  # For acceptance scope, section header matches Acceptance; for Tasks, Tasks.
+  for _bi in "${!_B_LINES[@]}"; do
+    _bline="${_B_LINES[$_bi]}"
+    if [[ "$_b_has_scope" -eq 1 ]]; then
+      if [[ "$_B_TARGET_SECTION" == "Acceptance" ]]; then
+        if [[ "$_bline" =~ ^##[[:space:]]+[Aa]cceptance ]]; then _b_in_sec=1; continue; fi
+      else
+        if [[ "$_bline" =~ ^##[[:space:]]+[Tt]asks ]]; then _b_in_sec=1; continue; fi
+      fi
+      if [[ "$_b_in_sec" -eq 1 && "$_bline" =~ ^##[[:space:]]+ ]]; then _b_in_sec=0; fi
+      [[ "$_b_in_sec" -eq 0 ]] && continue
+    fi
+    # Match exactly "- [X] " prefix (any single-char marker + trailing space).
+    case "$_bline" in
+      "- ["?"] "*) _B_BOX_POS+=("$_bi") ;;
+    esac
+  done
+  # In-memory tilde count (no awk per item).
+  _b_tildes=0
+  for _bp in "${_B_BOX_POS[@]}"; do
+    case "${_B_LINES[$_bp]}" in
+      "- [~]"*) _b_tildes=$((_b_tildes+1)) ;;
+    esac
+  done
+  # Soft warn once if the OTHER file in the plan has [~] (parity with single path).
+  if [[ "$QUIET" -eq 0 ]]; then
+    for _otherf in "${BDIR}/tasks.md" "${BDIR}/plan.md"; do
+      [[ -f "$_otherf" && "$_otherf" != "$_B_FILE" ]] || continue
+      _ow=0
+      while IFS= read -r _ol || [[ -n "$_ol" ]]; do
+        case "$_ol" in "- [~]"*) _ow=1; break ;; esac
+      done < "$_otherf"
+      if [[ "$_ow" -eq 1 ]]; then
+        echo "WARNING: ${_otherf} also has [~] — finish it before parallel work in same plan"
+        break
+      fi
+    done
+  fi
+  _b_write_and_exit() {
+    printf '%s\n' "${_B_LINES[@]}" > "$_B_FILE"
+    exit "$1"
+  }
+  _b_resolve_pos() {
+    # $1 = spec; sets global _BPOS to 0-based position index into _B_LINES,
+    # or "" if not found. No command substitution (zero forks per item).
+    local spec="$1" _k _p
+    _BPOS=""
+    if [[ "$spec" =~ ^[0-9]+$ ]]; then
+      _k=$((spec-1))
+      if [[ "$_k" -ge 0 && "$_k" -lt "${#_B_BOX_POS[@]}" ]]; then
+        _BPOS="${_B_BOX_POS[$_k]}"
+      fi
+      return 0
+    fi
+    for _p in "${_B_BOX_POS[@]}"; do
+      if [[ "${_B_LINES[$_p]}" == *"$spec"* ]]; then
+        _BPOS="$_p"
+        return 0
+      fi
+    done
+    return 0
+  }
   brc=0
   while IFS= read -r bline || [[ -n "$bline" ]]; do
     [[ -z "$bline" ]] && continue
     # shellcheck disable=SC2086
     set -- $bline
     bspec="${1:-}"; baction="${2:-}"; shift 2 || true
+    breason="${1:-}"
     if [[ -z "$bspec" || -z "$baction" ]]; then
       echo "ERROR: bad batch line (want '<n> <action> [reason]'): $bline"
-      brc=1
-      break
+      _b_write_and_exit 1
     fi
-    if ! bash "$0" "${EXTRA[@]}" "$BDIR" "$bspec" "$baction" "$@"; then
+    _b_resolve_pos "$bspec"
+    _bpos="$_BPOS"
+    if [[ -z "$_bpos" ]]; then
+      if [[ -n "$_B_TARGET_SECTION" ]]; then
+        echo "ERROR: checkbox #$bspec not found in ## $_B_TARGET_SECTION of $_B_FILE"
+      else
+        echo "ERROR: checkbox #$bspec not found in $_B_FILE"
+      fi
       echo "BATCH stopped at: $bline"
-      brc=1
-      break
+      _b_write_and_exit 1
     fi
+    _cur="${_B_LINES[$_bpos]}"
+    case "$baction" in
+      start)
+        case "$_cur" in
+          "- [~]"*) echo "Already [~]"; continue ;;
+        esac
+        if [[ "$_b_tildes" -ge 1 ]]; then
+          _oi=0; _otext=""
+          for _p in "${_B_BOX_POS[@]}"; do
+            case "${_B_LINES[$_p]}" in "- [~]"*) _oi=$((_p+1)); _otext="${_B_LINES[$_p]}"; break ;; esac
+          done
+          echo "ERROR: another task is already in progress: ${_oi}:${_otext}"
+          echo "Finish or block it first (one [~] per file)."
+          echo "BATCH stopped at: $bline"
+          _b_write_and_exit 1
+        fi
+        _B_LINES[$_bpos]="- [~] ${_cur:6}"
+        _b_tildes=$((_b_tildes+1))
+        echo "STARTED  ${_B_LINES[$_bpos]}  ($_B_FILE)"
+        ;;
+      done)
+        case "$_cur" in
+          "- [x]"*) echo "Already done"; continue ;;
+          "- [ ]"*|"- [~]"*|"- [!]"*) ;;
+          *)
+            echo "ERROR: cannot mark done from current state: $_cur"
+            echo "BATCH stopped at: $bline"
+            _b_write_and_exit 1
+            ;;
+        esac
+        case "$_cur" in "- [~]"*) _b_tildes=$((_b_tildes-1)) ;; esac
+        _B_LINES[$_bpos]="- [x] ${_cur:6}"
+        echo "DONE     ${_B_LINES[$_bpos]}  ($_B_FILE)"
+        ;;
+      cancel)
+        case "$_cur" in "- [~]"*) _b_tildes=$((_b_tildes-1)) ;; esac
+        _B_LINES[$_bpos]="- [-] ${_cur:6}"
+        if [[ -n "$breason" ]]; then _B_LINES[$_bpos]="${_B_LINES[$_bpos]} — ${breason}"; fi
+        echo "CANCEL   ${_B_LINES[$_bpos]}  ($_B_FILE)"
+        ;;
+      block)
+        case "$_cur" in "- [~]"*) _b_tildes=$((_b_tildes-1)) ;; esac
+        _B_LINES[$_bpos]="- [!] ${_cur:6}"
+        if [[ -n "$breason" ]]; then _B_LINES[$_bpos]="${_B_LINES[$_bpos]} — ${breason}"; fi
+        echo "BLOCKED  ${_B_LINES[$_bpos]}  ($_B_FILE)"
+        ;;
+      reopen)
+        case "$_cur" in "- [~]"*) _b_tildes=$((_b_tildes-1)) ;; esac
+        _B_LINES[$_bpos]="- [ ] ${_cur:6}"
+        echo "REOPENED ${_B_LINES[$_bpos]}  ($_B_FILE)"
+        ;;
+      *)
+        echo "Unknown action: $baction (use start|done|cancel|block|reopen)"
+        echo "BATCH stopped at: $bline"
+        _b_write_and_exit 1
+        ;;
+    esac
   done
-  exit "$brc"
+  _b_write_and_exit 0
 fi
 
 DIR="${1:-}"; SPEC="${2:-}"; ACTION="${3:-}"; REASON="${4:-}"
