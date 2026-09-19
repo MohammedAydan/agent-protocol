@@ -298,6 +298,13 @@ check_out "resume lists quick" "quick] quick-foo" bash .agents/scripts/resume.sh
 check "doctor silent on _quick" bash -c "! bash .agents/scripts/doctor.sh 2>&1 | grep -q quick-foo"
 check_out "session-log --brief" "brief-note" bash .agents/scripts/session-log.sh --brief "brief-note"
 
+# OPT-2: slim T1 template (<=10 lines, no Complexity line)
+bash .agents/scripts/new-plan.sh T1 slim-t1 >/dev/null 2>&1
+check "slim T1 <=10 lines" bash -c "[[ $(wc -l < plans/slim-t1/plan.md) -le 10 ]]"
+check "slim T1 no Complexity line" bash -c "! grep -q 'Complexity' plans/slim-t1/plan.md"
+check "slim T1 keeps Tasks section" grep -q "^## Tasks" plans/slim-t1/plan.md
+check "T1 template <=10 lines" bash -c "[[ $(wc -l < .agents/templates/T1-plan.md) -le 10 ]]"
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
