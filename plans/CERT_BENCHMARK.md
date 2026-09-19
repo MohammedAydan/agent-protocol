@@ -54,5 +54,11 @@
 
 ---
 
+## Commit Accounting & History
+- Total commit count: 19 commits = 4 (Phase 0.5) + 13 (D-items, D6+D9 merged) + 1 (CLI alignment) + 1 (release bump 2d00dca).
+- Includes parity alignment commit `c7432b9`: `chore(cli): align PowerShell Install-Init with bash init` (ADR-006).
+
+---
+
 ## Certification Sign-off
 Agent Protocol v1.1.0 satisfies all architectural requirements, dogfood lifecycles, and verification gates. The codebase is hardened for cross-platform Windows, Linux, and macOS usage with zero backwards-incompatible regressions.
