@@ -154,6 +154,26 @@ function Install-Init {
     exit 1
   }
 
+  $bash = Get-Bash
+  if ($bash) {
+    $script = (Join-Path $Pkg ".agents\scripts\init.sh") -replace '\\', '/'
+    if (Test-Path $script) {
+      $targetBash = (Resolve-Path $target).Path -replace '\\', '/'
+      $cmdArgs = @($script, $targetBash)
+      if ($force) { $cmdArgs += "--force" }
+      if ($Rest) {
+        foreach ($r in $Rest) {
+          if ($r -ne "init" -and $r -ne "--force") {
+            $cmdArgs += $r
+          }
+        }
+      }
+      & $bash @cmdArgs
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      return
+    }
+  }
+
   Write-Host "=== init from global package ===" -ForegroundColor Cyan
   Copy-Item -Force (Join-Path $Pkg "AGENTS.md") (Join-Path $target "AGENTS.md")
   Write-Host "  + AGENTS.md"
@@ -204,17 +224,50 @@ function Install-Init {
       "Critical Constraints: TBD"
       "Active Plans: none"
       "Known Issues: none"
+      ""
+    )
+    Write-Utf8File (Join-Path $plans "ARCH.md") @(
+      "# Architecture"
+      ""
+      "## High-level"
+      "TBD"
+      ""
+      "## Key modules"
+      "TBD"
+      ""
+    )
+    Write-Utf8File (Join-Path $plans "TECH_STACK.md") @(
+      "# Tech Stack"
+      ""
+      "| Layer | Choice | Version | Reason |"
+      "|-------|--------|---------|--------|"
+      "| Language | TBD |  |  |"
+      "| Framework | TBD |  |  |"
+      "| DB | TBD |  |  |"
+      "| Testing | TBD |  |  |"
+      ""
+    )
+    Write-Utf8File (Join-Path $plans "DECISIONS.md") @(
+      "# Architecture Decision Records"
+      ""
+      "<!-- ADR-NNN: Date / Status / Context / Decision / Alternatives / Consequences -->"
+      ""
+    )
+    Write-Utf8File (Join-Path $plans "PATTERNS.md") @(
+      "# Patterns"
+      ""
+      "<!-- Problem / Solution / Example / Gotchas -->"
+      ""
     )
     Write-Utf8File (Join-Path $plans "SESSION_LOG.md") @(
       "# Session Log"
       ""
-      "## $ts UTC - Bootstrap"
-      "- Done: init via agent-protocol (Windows)"
-      "- Resume: classify first work T0-T3"
+      ("## " + (Get-Date -Format 'yyyy-MM-dd HH:mm UTC') + " - Bootstrap")
+      "- Done: Created initial plans/ brain"
+      "- Decisions: none yet"
+      "- Files: context ARCH TECH_STACK DECISIONS PATTERNS SESSION_LOG"
+      "- Resume: classify first work (T0-T3) then start"
     )
-    foreach ($f in @("ARCH.md", "TECH_STACK.md", "DECISIONS.md", "PATTERNS.md")) {
-      Write-Utf8File (Join-Path $plans $f) @("# $f", "")
-    }
     Write-Host "  + plans/"
   }
 
