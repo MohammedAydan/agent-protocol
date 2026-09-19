@@ -37,6 +37,9 @@ function Show-Help {
   Write-Host "  init [--adapters none|all|claude,cursor] [--force]"
   Write-Host "  update [--force]"
   Write-Host "  upgrade"
+  if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
+    Write-Host "WARN: Git Bash not found. Commands like doctor/status/test require it." -ForegroundColor Yellow
+  }
   Write-Host "With Git Bash: doctor status resume test stress new task ..."
 }
 

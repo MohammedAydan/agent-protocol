@@ -38,6 +38,7 @@ Always choose the **lowest viable tier**. Unsure → ask the human.
 ### Global CLI (best)
 
 ```bash
+# macOS / Linux / Git Bash (on Windows use curl.exe; see docs/WINDOWS.md):
 curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -52,7 +53,7 @@ agent-protocol upgrade         # upgrade global package from GitHub
 irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
 ```
 
-Full guide: [INSTALL.md](INSTALL.md)
+Full guide: [INSTALL.md](INSTALL.md) | Windows guide: [docs/WINDOWS.md](docs/WINDOWS.md)
 
 
 ## Layout

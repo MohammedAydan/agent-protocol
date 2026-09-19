@@ -26,6 +26,9 @@ $ErrorActionPreference = "Stop"
 if ($env:AP_FORCE -eq "1") { $Force = $true }
 if ($env:AP_NONINTERACTIVE -eq "1") { $NonInteractive = $true }
 if (-not $Adapters -and $env:AP_ADAPTERS) { $Adapters = $env:AP_ADAPTERS }
+if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
+  Write-Host "WARN: Git Bash not found. Commands like doctor/status/test require it." -ForegroundColor Yellow
+}
 
 $Target = (Get-Location).Path
 if (-not $Name) { $Name = Split-Path $Target -Leaf }
