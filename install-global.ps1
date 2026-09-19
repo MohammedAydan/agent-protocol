@@ -1,4 +1,4 @@
-# install-global.ps1 — Agent Protocol global install for Windows
+# install-global.ps1 — Agent Protocol global install for Windows (PowerShell-native CLI)
 # irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.ps1 | iex
 
 $ErrorActionPreference = "Stop"
@@ -32,32 +32,22 @@ try {
   New-Item -ItemType Directory -Path $Dest -Force | Out-Null
   Copy-Item -Recurse -Force (Join-Path $pkg.FullName "*") $Dest
 
+  # Ensure PS CLI exists even if archive was old
+  $psCli = Join-Path $Dest "bin\agent-protocol.ps1"
+  if (-not (Test-Path $psCli)) {
+    Write-Host "WARNING: agent-protocol.ps1 missing in package" -ForegroundColor Yellow
+  }
+
   $shimDir = Join-Path $env:LOCALAPPDATA "agent-protocol\shims"
   New-Item -ItemType Directory -Path $shimDir -Force | Out-Null
 
-  $bash = $null
-  foreach ($c in @(
-    "$env:ProgramFiles\Git\bin\bash.exe",
-    "${env:ProgramFiles(x86)}\Git\bin\bash.exe",
-    "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe"
-  )) { if (Test-Path $c) { $bash = $c; break } }
-
-  # agent-protocol.cmd — runs package CLI under Git Bash
-  $cliUnix = ($Dest -replace '\\','/') -replace '^([A-Za-z]):', { param($m) '/' + $m.Groups[1].Value.ToLower() }
-  # Simpler: pass Windows path; Git Bash accepts it often
-  $cliWin = Join-Path $Dest "bin\agent-protocol"
-
-  $cmdLines = @()
-  $cmdLines += "@echo off"
-  if ($bash) {
-    # %* passes all args; bash -lc runs the script with bash
-    $cmdLines += "set `"AP_HOME=$Dest`""
-    $cmdLines += "`"$bash`" `"$cliWin`" %*"
-  } else {
-    $cmdLines += "echo ERROR: Git for Windows not found. Install from https://git-scm.com/download/win"
-    $cmdLines += "exit /b 1"
-  }
-  $cmdLines | Set-Content -Encoding ascii (Join-Path $shimDir "agent-protocol.cmd")
+  # agent-protocol.cmd → PowerShell CLI (no Git Bash required)
+  $cmdFile = Join-Path $shimDir "agent-protocol.cmd"
+  $ps1 = Join-Path $Dest "bin\agent-protocol.ps1"
+  @"
+@echo off
+powershell -NoProfile -ExecutionPolicy Bypass -File "$ps1" %*
+"@ | Set-Content -Encoding ascii $cmdFile
 
   $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
   if (-not $userPath) { $userPath = "" }
@@ -69,19 +59,26 @@ try {
 
   "1.0.0" | Set-Content -Encoding ascii (Join-Path $Dest "VERSION")
 
+  $bashOk = $false
+  foreach ($c in @(
+    "$env:ProgramFiles\Git\bin\bash.exe",
+    "${env:ProgramFiles(x86)}\Git\bin\bash.exe",
+    "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe"
+  )) { if (Test-Path $c) { $bashOk = $true; break } }
+
   Write-Host ""
   Write-Host "=== Installed ===" -ForegroundColor Green
   Write-Host "  Package: $Dest"
-  Write-Host "  Shim   : $shimDir\agent-protocol.cmd"
-  if (-not $bash) {
-    Write-Host "  Install Git for Windows, then re-run this installer." -ForegroundColor Yellow
+  Write-Host "  Command: agent-protocol (PowerShell-native)"
+  if (-not $bashOk) {
+    Write-Host "  Note: Git Bash not found — version/update/upgrade/init work without it." -ForegroundColor Yellow
+    Write-Host "  Optional: install Git for Windows for doctor/test/task scripts."
   }
   Write-Host ""
-  Write-Host "  Close this window and open a NEW PowerShell, then:"
+  Write-Host "  Open a NEW PowerShell window, then:"
   Write-Host "    agent-protocol version"
-  Write-Host "    cd your-project"
-  Write-Host "    agent-protocol init --here --adapters none"
   Write-Host "    agent-protocol update"
+  Write-Host "    agent-protocol upgrade"
 } finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }
