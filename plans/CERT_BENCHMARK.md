@@ -5,6 +5,7 @@
 - **Release Date**: 2026-09-19
 - **Certifier**: Principal Framework Engineer
 - **Environment**: Microsoft Windows (NT 10.0), PowerShell 5.1 / PowerShell 7+, Git Bash (MSYS2 / bash 5.2)
+- v1.1.0 tag sealed at commit 8a45dd0.
 
 ---
 
