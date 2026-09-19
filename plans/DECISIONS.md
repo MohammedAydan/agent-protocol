@@ -69,3 +69,19 @@
   rejected: changes default stdout bytes for every v1.0.0 consumer and
   breaks the "default behavior preserved" directive.
 - **Consequences:** Zero compat risk; Windows UX fixed via documented flag.
+
+## ADR-006 — PowerShell Install-Init alignment with init.sh
+
+- **Date:** 2026-09-19
+- **Status:** Accepted (retroactive documentation)
+- **Context:** c7432b9 was added during Phase 4 verification after
+  verify-parity.sh exposed divergent stub content and BOM output
+  between bash init.sh and PowerShell Install-Init. The commit was
+  scoped as a parity fix but was NOT in the original D1–D13 backlog.
+- **Decision:** Keep c7432b9 as an additive fix; document it here as
+  formally extending D8's scope. It does not change any v1.0.0
+  behavior — it aligns PowerShell output with bash output that
+  v1.0.0 users already expected.
+- **Alternatives considered:** Revert and re-issue as separate D14 — rejected
+  because it ships the same fix that D8's parity gate requires.
+- **Consequences:** D8 now covers both update path and init path.
