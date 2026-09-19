@@ -11,7 +11,7 @@
 
 - HTTPS only; default allowlist `https://github.com/…` and `https://codeload.github.com/…`.
 - Downloads archive to a temp directory, validates `AGENTS.md` + `init.sh` exist, then runs local `init.sh`.
-- Prefer a **pinned tag** (`AGENT_PROTOCOL_REF=v1.0.0` or `--ref`).
+- Prefer a **pinned tag** (`v1.0.0`). Default repo: `MohammedAydan/agent-protocol`.
 - Prefer `git clone` + review when possible instead of piping `curl | bash`.
 
 ## Runtime scripts

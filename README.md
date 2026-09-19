@@ -2,6 +2,8 @@
 
 **First production release.** Universal software-engineering protocol for AI coding agents.
 
+**Repo:** https://github.com/MohammedAydan/agent-protocol
+
 Works with 30+ tools that read `AGENTS.md` (Linux Foundation Agentic AI Foundation convention), plus thin adapters for Claude Code, Cursor, Copilot, Windsurf/Devin Desktop, Cline, Roo, and Gemini/Antigravity.
 
 ---
@@ -33,52 +35,63 @@ Always choose the **lowest viable tier**. Unsure → ask the human.
 
 ## Install (new or existing project)
 
-Works like Speckit: one command, does **not** rewrite your app code.
+Safe by default: **never replaces your `README.md`, source code, or app config.**
 
-### Existing project (most common)
+**Repo:** https://github.com/MohammedAydan/agent-protocol
 
-```bash
-# From inside your repo
-bash /path/to/agent-protocol-1.0.0/init --here
-
-# Or with force refresh of protocol files
-bash /path/to/agent-protocol-1.0.0/init --here --force --name "My App" --purpose "…"
-```
-
-### New empty folder
+### One-liner from GitHub
 
 ```bash
-mkdir my-app && cd my-app
-bash /path/to/agent-protocol-1.0.0/init --here --name "My App" --purpose "API service"
+# Pin a tag (recommended)
+curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/v1.0.0/install-remote.sh \
+  | bash -s -- --here --adapters all --non-interactive
+
+# From main branch
+curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh \
+  | bash -s -- --here --adapters all --non-interactive
+
+# Only Claude + Cursor
+curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/v1.0.0/install-remote.sh \
+  | bash -s -- --here --adapters claude,cursor --non-interactive
 ```
 
-### From protocol package root
+### Local clone (safest)
 
 ```bash
-./init /path/to/your-repo --name "My App" --purpose "…"
-./init /path/to/your-repo --force          # refresh protocol files only
+git clone --depth 1 --branch v1.0.0 https://github.com/MohammedAydan/agent-protocol.git /tmp/agent-protocol
+cd /path/to/your-app
+bash /tmp/agent-protocol/init --here --adapters all
 ```
 
-### What gets added
+### Existing project (from a local copy of this package)
 
-| Path | Role |
-|------|------|
-| `AGENTS.md` | Rules every AI agent reads |
-| `.agents/` | Scripts, skills, standards |
-| `adapters/` + tool mirrors | Claude / Cursor / Copilot / … |
-| `plans/` | Project brain (created if missing) |
+```bash
+bash /path/to/agent-protocol/init --here
+bash /path/to/agent-protocol/init --here --adapters claude,cursor --non-interactive
+bash /path/to/agent-protocol/init --here --force   # refresh protocol files only
+```
 
-Your source code is never modified. Safe to review in a PR.
+`--adapters`: `all` | `none` | `claude,cursor,copilot,windsurf,cline,roo,codex,gemini`  
+Without `--adapters` on a TTY → interactive menu.
+
+### What is / is not touched
+
+| Installed | Never modified |
+|-----------|----------------|
+| `AGENTS.md` | Your `README.md` |
+| `.agents/` | Application source |
+| Selected harness mirrors | `package.json`, lockfiles |
+| `plans/` (if missing) | `.git/` |
 
 ### After install
 
 ```bash
 bash .agents/scripts/resume.sh
 bash .agents/scripts/protocol.sh new T1 first-feature
-bash .agents/scripts/protocol.sh test    # optional smoke check
 ```
 
----
+See [INSTALL.md](INSTALL.md) and [SECURITY.md](SECURITY.md).
+
 
 ## Layout
 
