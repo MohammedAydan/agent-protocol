@@ -10,7 +10,13 @@ $ErrorActionPreference = "Stop"
 $Owner = if ($env:AGENT_PROTOCOL_OWNER) { $env:AGENT_PROTOCOL_OWNER } else { "MohammedAydan" }
 $Repo  = if ($env:AGENT_PROTOCOL_REPO)  { $env:AGENT_PROTOCOL_REPO }  else { "agent-protocol" }
 $Ref   = if ($env:AGENT_PROTOCOL_REF)   { $env:AGENT_PROTOCOL_REF }   else { "main" }
-$Pkg   = if ($env:AGENT_PROTOCOL_HOME)  { $env:AGENT_PROTOCOL_HOME }  else { Join-Path $env:LOCALAPPDATA "agent-protocol" }
+$Pkg   = if ($env:AGENT_PROTOCOL_HOME)  {
+  $env:AGENT_PROTOCOL_HOME
+} elseif ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "..\AGENTS.md")) -and (Test-Path (Join-Path $PSScriptRoot "..\.agents\scripts"))) {
+  (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+} else {
+  Join-Path $env:LOCALAPPDATA "agent-protocol"
+}
 
 function Get-Bash {
   foreach ($c in @(
@@ -28,7 +34,9 @@ function Write-Utf8File([string]$Path, [string[]]$Lines) {
   if ($dir -and -not (Test-Path $dir)) {
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
   }
-  $Lines | Set-Content -Path $Path -Encoding utf8
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  $content = ($Lines -join "`n") + "`n"
+  [System.IO.File]::WriteAllText($Path, $content, $utf8NoBom)
 }
 
 function Show-Help {
@@ -60,6 +68,28 @@ function Update-Project {
     Write-Host "ERROR: package path equals project path" -ForegroundColor Red
     exit 1
   }
+
+  $bash = Get-Bash
+  if ($bash) {
+    $script = (Join-Path $Pkg ".agents\scripts\update-project.sh") -replace '\\', '/'
+    if (Test-Path $script) {
+      $pkgBash = $pkgFull -replace '\\', '/'
+      $cmdArgs = @($script, "--from", $pkgBash, "--here")
+      if ($Force) { $cmdArgs += "--force" }
+      if ($Rest) {
+        foreach ($r in $Rest) {
+          if ($r -ne "update" -and $r -ne "--force") {
+            $cmdArgs += $r
+          }
+        }
+      }
+      & $bash @cmdArgs
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      return
+    }
+  }
+
+  Write-Host "WARN: Git Bash not found; falling back to PowerShell update." -ForegroundColor Yellow
   Write-Host "=== Update protocol in project ===" -ForegroundColor Cyan
   Write-Host "  package: $Pkg"
   Write-Host "  target : $target"
@@ -140,6 +170,16 @@ function Install-Init {
     New-Item -ItemType Directory -Force -Path $ds | Out-Null
     Copy-Item -Recurse -Force (Join-Path $Pkg ".agents\scripts\*") $ds
     Write-Host "  + .agents/scripts/ (refreshed)"
+  }
+
+  $ad = Join-Path $Pkg "adapters"
+  if (Test-Path $ad) {
+    $d = Join-Path $target "adapters"
+    if (-not (Test-Path $d)) {
+      New-Item -ItemType Directory -Force -Path $d | Out-Null
+      Copy-Item -Recurse -Force (Join-Path $ad "*") $d
+      Write-Host "  + adapters/"
+    }
   }
 
   if ($adapters -match "all|claude") {
