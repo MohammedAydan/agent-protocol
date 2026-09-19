@@ -45,7 +45,7 @@ which : The term 'which' is not recognized [...]
 exit: 1
 
 $ echo a && echo b      # PowerShell 5.1
-+ echo a && echo b; echo "EXIT:$?"
++ echo a && echo b; Write-Host "exit:$LASTEXITCODE"
 +        ~~
 The token '&&' is not a valid statement separator in this version.
 + CategoryInfo : ParserError / InvalidEndOfLine
