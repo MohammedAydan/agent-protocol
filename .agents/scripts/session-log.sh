@@ -3,6 +3,12 @@
 # Usage: session-log.sh "<title>" "<done>" ["<decisions>"] ["<files>"] ["<resume>"]
 
 set -euo pipefail
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,4p' "$0"
+  exit 0
+fi
+
 TITLE="${1:-Untitled}"
 DONE="${2:-}"
 DECISIONS="${3:-}"

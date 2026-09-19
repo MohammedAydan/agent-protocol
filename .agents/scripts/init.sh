@@ -41,7 +41,7 @@ Usage: init.sh [target|--here] [options]
 
 Never modifies: README.md, CHANGELOG.md, package.json, source trees, .git, …
 U
-  exit 1
+  exit "${1:-1}"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -52,7 +52,7 @@ while [[ $# -gt 0 ]]; do
     --purpose)           PURPOSE="${2:-}"; shift 2 ;;
     --adapters)          ADAPTERS_SPEC="${2:-}"; shift 2 ;;
     --non-interactive)   NON_INTERACTIVE=1; shift ;;
-    -h|--help)           usage ;;
+    -h|--help)           usage 0 ;;
     -*)                  echo "Unknown option: $1"; usage ;;
     *)                   TARGET="$1"; shift ;;
   esac

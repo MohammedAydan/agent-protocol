@@ -25,6 +25,14 @@ case "$CMD" in
   init)        run init.sh "$@" ;;
   update)      run update-project.sh "$@" ;;
   stress)      run test-stress.sh "$@" ;;
+  help|-h|--help)
+    cat <<USAGE
+Usage: protocol.sh <command> [args]
+  boot|resume | new | task | status | list | next | promote
+  close | archive | log | doc | doctor | verify | test | stress | sync | bootstrap | init | update
+USAGE
+    exit 0
+    ;;
   *)
     cat <<USAGE
 Usage: protocol.sh <command> [args]

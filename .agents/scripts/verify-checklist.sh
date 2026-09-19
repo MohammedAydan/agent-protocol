@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # verify-checklist.sh — Print verification checklist before marking [x].
 set -euo pipefail
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,3p' "$0"
+  exit 0
+fi
+
 NOTE="${1:-}"
 cat <<EOF
 === Verification checklist (before [x]) ===

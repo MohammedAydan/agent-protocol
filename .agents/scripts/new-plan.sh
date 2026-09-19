@@ -10,6 +10,12 @@
 
 set -euo pipefail
 
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,10p' "$0"
+  echo "T1 rule: task.sh defaults to '## Tasks'. Use --acceptance for '## Acceptance'. See AGENTS.md."
+  exit 0
+fi
+
 [[ ! -f plans/context.md ]] && echo "NOTE: plans/ not bootstrapped — run bootstrap.sh first (continuing anyway)."
 
 FORCE=0

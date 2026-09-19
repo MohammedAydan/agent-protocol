@@ -6,6 +6,11 @@
 
 set -euo pipefail
 
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,6p' "$0"
+  exit 0
+fi
+
 ISSUES=0
 warn() { echo "⚠  $1"; ISSUES=$((ISSUES + 1)); }
 ok()   { echo "✓  $1"; }

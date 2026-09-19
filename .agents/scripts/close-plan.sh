@@ -5,6 +5,11 @@
 
 set -euo pipefail
 
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,5p' "$0"
+  exit 0
+fi
+
 FORCE=0
 if [[ "${1:-}" == "--force" ]]; then
   FORCE=1

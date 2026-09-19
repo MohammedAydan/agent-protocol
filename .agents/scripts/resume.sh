@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # resume.sh — Minimal session boot (token-cheap).
 set -euo pipefail
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,3p' "$0"
+  exit 0
+fi
+
 R="plans"
 echo "=== SESSION RESUME ==="
 if [[ -f "$R/context.md" ]]; then head -n 8 "$R/context.md"; else echo "(no context — bootstrap.sh)"; fi

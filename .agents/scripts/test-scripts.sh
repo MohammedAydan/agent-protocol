@@ -194,6 +194,21 @@ else
   echo "FAIL  task.sh --acceptance scopes to acceptance section"; fail=$((fail+1))
 fi
 
+# D4: --help on protocol scripts
+d4_fail=0
+for s in archive.sh close-plan.sh doctor.sh status.sh verify-checklist.sh \
+         list-plans.sh resume.sh next-task.sh promote.sh session-log.sh \
+         update-doc.sh sync-adapters.sh new-plan.sh bootstrap.sh init.sh \
+         update-project.sh protocol.sh task.sh; do
+  out=$(bash ".agents/scripts/$s" --help 2>&1) || { d4_fail=$((d4_fail+1)); }
+  [[ -z "$out" ]] && { d4_fail=$((d4_fail+1)); }
+done
+if [[ "$d4_fail" -eq 0 ]]; then
+  echo "PASS  all protocol scripts support --help"; pass=$((pass+1))
+else
+  echo "FAIL  all protocol scripts support --help ($d4_fail failed)"; fail=$((fail+1))
+fi
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]

@@ -7,6 +7,11 @@
 
 set -euo pipefail
 
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,7p' "$0"
+  exit 0
+fi
+
 KIND="${1:-}"
 shift || true
 

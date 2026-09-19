@@ -4,6 +4,12 @@
 # Portable: no process substitution. Skips plans/_archive/.
 
 set -euo pipefail
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,5p' "$0"
+  exit 0
+fi
+
 ROOT="${1:-plans}"
 
 if [[ ! -d "$ROOT" ]]; then
