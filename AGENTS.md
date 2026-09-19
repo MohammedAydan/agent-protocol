@@ -102,7 +102,7 @@ Empty `plan.md` / empty Tasks while writing production code = protocol violation
 
 When all tasks are `[x]` or `[-]`:
 
-1. `close-plan.sh plans/<name>` (creates `review.md`)
+1. `close-plan.sh plans/<name>` (creates `review.md`; scans `tasks.md`, `plan.md`, and `OVERVIEW.md` for open tasks)
 2. Append `SESSION_LOG.md` (what shipped, decisions, resume note)
 3. Optional: `archive.sh plans/<name>`
 

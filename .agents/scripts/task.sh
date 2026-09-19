@@ -134,7 +134,9 @@ active_tilde() {
 
 case "$ACTION" in
   start)
-    if [[ "$CURRENT" == *"[~]"* ]]; then echo "Already [~]"; exit 0; fi
+    case "$CURRENT" in
+      "- [~]"*) echo "Already [~]"; exit 0 ;;
+    esac
     n=$(active_tilde "$FILE")
     if [[ "$n" -ge 1 ]]; then
       other=$(grep -nE '^\- \[~\]' "$FILE" | head -1)
@@ -153,11 +155,14 @@ case "$ACTION" in
     echo "STARTED  $(sed -n "${LINE_NO}p" "$FILE")  ($FILE)"
     ;;
   done)
-    [[ "$CURRENT" == *"[x]"* ]] && { echo "Already done"; exit 0; }
-    if [[ "$CURRENT" != *"[ ]"* && "$CURRENT" != *"[~]"* && "$CURRENT" != *"[!]"* ]]; then
-      echo "ERROR: cannot mark done from current state: $CURRENT"
-      exit 1
-    fi
+    case "$CURRENT" in
+      "- [x]"*) echo "Already done"; exit 0 ;;
+      "- [ ]"*|"- [~]"*|"- [!]"*) ;;
+      *)
+        echo "ERROR: cannot mark done from current state: $CURRENT"
+        exit 1
+        ;;
+    esac
     set_marker 'x'
     echo "DONE     $(sed -n "${LINE_NO}p" "$FILE")  ($FILE)"
     ;;

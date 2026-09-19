@@ -157,6 +157,22 @@ run task.sh plans/p-a 1 block "need API key's \"quote\"" >/dev/null 2>&1 && ok "
 run archive.sh --all >/dev/null 2>&1 || true
 ok "archive --all runs"
 
+# --- 21 close-plan and archive scan OVERVIEW.md (D12) ---
+run new-plan.sh T3 epic-d12 >/dev/null
+if run close-plan.sh plans/epic-d12 >/dev/null 2>&1; then
+  bad "close-plan allowed open OVERVIEW.md"
+else
+  ok "close-plan refuses open OVERVIEW.md"
+fi
+if run archive.sh plans/epic-d12 >/dev/null 2>&1; then
+  bad "archive allowed open OVERVIEW.md"
+else
+  ok "archive refuses open OVERVIEW.md"
+fi
+sed -i.bak 's/- \[ \]/- [x]/' plans/epic-d12/OVERVIEW.md
+run close-plan.sh plans/epic-d12 >/dev/null && ok "close-plan accepts resolved OVERVIEW.md" || bad "close-plan accepts resolved OVERVIEW.md"
+run archive.sh plans/epic-d12 >/dev/null && ok "archive accepts resolved OVERVIEW.md" || bad "archive accepts resolved OVERVIEW.md"
+
 echo ""
 echo "STRESS Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]

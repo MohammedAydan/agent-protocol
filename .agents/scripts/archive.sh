@@ -36,7 +36,7 @@ archive_one() {
   [[ -d "$target" ]] || { echo "ERROR: not a folder: $target"; return 1; }
   case "$target" in plans/_archive*) echo "ERROR: already archived"; return 1;; esac
 
-  for f in "${target}/tasks.md" "${target}/plan.md"; do
+  for f in "${target}/tasks.md" "${target}/plan.md" "${target}/OVERVIEW.md"; do
     if [[ -f "$f" ]] && grep -qE '^\- \[ \]|^\- \[~\]|^\- \[!\]' "$f" 2>/dev/null; then
       echo "REFUSED: open/blocked tasks in $f — resolve first"; return 1
     fi

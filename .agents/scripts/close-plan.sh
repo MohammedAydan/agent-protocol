@@ -21,7 +21,7 @@ TARGET="${1:-}"
 
 # Check unresolved tasks
 unresolved=0
-for f in "${TARGET}/tasks.md" "${TARGET}/plan.md"; do
+for f in "${TARGET}/tasks.md" "${TARGET}/plan.md" "${TARGET}/OVERVIEW.md"; do
   if [[ -f "$f" ]]; then
     if grep -qE '^\- \[ \]|^\- \[~\]|^\- \[!\]' "$f" 2>/dev/null; then
       unresolved=1
