@@ -15,7 +15,7 @@
 |:---|:---|:---|:---|:---:|
 | **D1** | `task.sh` section scoping | Added `--section tasks\|acceptance` (`--acceptance` alias); defaults to `## Tasks` for T1 | `5569b19` | **PASSED** |
 | **D2** | Archive nesting | `archive.sh` preserves nested T3 epic hierarchy under `_archive/<epic>/<subplan>` | `55a02fd` | **PASSED** |
-| **D3** | Windows documentation | Created `docs/WINDOWS.md`; updated installers, README, and INSTALL with Git Bash guidance | `781fbcb` | **PASSED** |
+| **D3** | Windows documentation | Created `docs/WINDOWS.md`; updated installers, README, and INSTALL with Git Bash guidance | `781fbcb, ce44986` | **PASSED** |
 | **D4** | CLI help flags | All 19 protocol shell scripts support `--help` and `-h` with exit 0 | `b7eefe3` | **PASSED** |
 | **D5** | Strict verification mode | `verify-checklist.sh --strict` scans for open tasks and reports file:line before exit 1 | `527f83e` | **PASSED** |
 | **D6** | Encoding linter | Added `lint-encoding.sh` checking for BOM, CRLF in `.sh`, and `.gitattributes` presence | `a3e7883` | **PASSED** |
@@ -34,8 +34,8 @@
 ## Verification Gates & Benchmark Results
 
 ### 1. Framework Test Suites
-- **Smoke Suite (`test-scripts.sh`)**: **44 / 44 passed** (100%)
-- **Stress Suite (`test-stress.sh`)**: **42 / 42 passed** (100%)
+- **Smoke Suite (`test-scripts.sh`)**: All smoke tests pass (run `bash .agents/scripts/test-scripts.sh` for the current count; exit code 0 required).
+- **Stress Suite (`test-stress.sh`)**: All stress tests pass (run `bash .agents/scripts/test-stress.sh` for the current count; exit code 0 required).
 - **Encoding & Line Ending Lint (`lint-encoding.sh`)**: **Clean** (Exit code 0, zero warnings, zero errors)
 
 ### 2. Scratch Consumer Verification (8 / 8 Gates Passed)
@@ -58,6 +58,7 @@
 ## Commit Accounting & History
 - **Commit count:** from baseline `aad77e1` to the sealed commit — run `git rev-list --count aad77e1..HEAD` for the exact number.
 - Includes parity alignment commit `c7432b9`: `chore(cli): align PowerShell Install-Init with bash init` (ADR-006).
+- G1-G5 documentation fixups: ce44986, 9f3646a, 89abb40, 8e01d4e, 8a45dd0, a67947f.
 
 ---
 
