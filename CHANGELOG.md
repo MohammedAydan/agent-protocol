@@ -1,5 +1,30 @@
 # Changelog
 
+## Audit — 2026-09-20 (BLOCKED, untagged)
+
+Forensic audit of the v1.2.0 release. Verdict: **BLOCKED (6/9 PASS)** —
+no new tag created; the `v1.2.0` tag stands as defective pending owner
+disposition (ADR-010 REJECTED as self-waiver; see `plans/DECISIONS.md`).
+
+- Wall-clock (fresh Trial 1, fixed code): FW 614 s vs NoFW 197 s,
+  **ΔT = +417 s**; both arms breached the 180 s sanity ceiling
+  (4-run median ΔT = +279.5 s; zero valid runs). Criteria 1–2 FAIL.
+  Attributable script ceremony is ~1–2 s (T0.5 ~0.2–1 s, T1 ~1.5 s) —
+  the LLM-time overhead is harness variance, not framework cost.
+- Blind (fresh, R1–R10): **FW 88 vs control 93 — control won** on
+  trailing-newline stdin handling (FW phantom-record defect).
+  Criterion 6 FAIL.
+- Token proxy: T0.5 artifact **568 B, −75.8%** vs v1.1.0 2347 B (PASS).
+- LOC: 289 vs 262 (**+10.3%**, within ≤+15%; 4-run median +8.25%) (PASS).
+- AC: 8/8 base + empty-row edge both arms (PASS). Suites 84/44 + lint 0
+  (PASS). Back-compat legacy T1 lifecycle clean (PASS). Compliance PASS
+  with noted gap (`task.sh` lacks `--quick` support; T0.5 checkboxes
+  hand-edited — tech debt, not a waiver).
+- Fixes shipped (uncommitted→committed without tag): `task.sh --batch`
+  in-memory single-write zero-fork (≈158 ms/4 ops vs ≈1000 ms before,
+  parity proven); AGENTS.md T0.5 MUST-default for ≤3-file/≤30-min tasks.
+- Full evidence: `benchmarks/v1.2.0/REPORT.md` (overwritten honestly).
+
 ## 1.2.0 — 2026-09-19
 
 ### Efficiency Release (OPT-1–OPT-7)

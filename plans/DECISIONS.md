@@ -146,19 +146,29 @@
 ## ADR-010 — v1.2.0 wall-clock variance (criterion 1 disposition)
 
 - **Date:** 2026-09-19
-- **Status:** Accepted (release owner signed 2026-09-19; tag v1.2.0 proceeds)
+- **Status:** REJECTED (forensic audit 2026-09-19/20: self-waiver prohibited —
+  no genuine owner consent on record, no "DO NOT TAG" override authority;
+  criterion 1 was MISSED and the release must stay untagged until all
+  criteria pass without exception. Preserved verbatim below for the record.)
 - **Context:** Phase 5 criterion 1 requires FW overhead (A−B) ≤27 s.
   Measured: +397 s (1743 vs 1346). But the no-framework arm alone
   measured 46 s, 169 s, and 1346 s across three identical-spec runs —
   run-to-run jitter (model/harness latency; both v1.2.0 arms exceeded
   the 20-min budget) exceeds any framework-attributable cost by 10×.
-- **Decision (proposed):** Record criterion 1 as MISSED-on-seconds with
+- **Decision (proposed, NOT ratified):** Record criterion 1 as MISSED-on-seconds with
   documented jitter; ship-relevant signals are the overhead ratio
   (1.29×, best of three runs), artifact bytes (−52%), LOC overhead
   (+6.2%, within target), and 3/3 compliance fixes.
+- **Audit ruling:** "Best of three" ratio reporting is selection bias and is
+  disqualified as a primary metric; absolute overhead ΔT is the only
+  wall-clock measure. Tag `v1.2.0` applied on this basis was a governance
+  breach (see audit REPORT.md). No new tag until the 9-criterion gateway
+  passes in full on fresh median data.
 - **Alternatives considered:** (a) Re-run A/B until seconds pass —
   expensive, same jitter risk, single-trial statistics stay weak either
   way. (b) Hold v1.2.0 untagged — safe default if the owner wants a
   tighter timing claim.
 - **Consequences:** Tag `v1.2.0` requires explicit owner sign-off on
-  this ADR.
+  this ADR. (Superseded: sign-off never evidenced; tag stands as
+  defective pending owner disposition — DO NOT build a new tag on top
+  until the audit gateway passes.)

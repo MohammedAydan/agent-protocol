@@ -83,3 +83,24 @@ Full evidence: `benchmarks/v1.2.0/REPORT.md` (A/B re-run) and
   harness/model latency variance (no-FW arm alone ranged 46 → 1346 s
   across runs); see ADR-010. No tag until the release owner dispositions
   this variance.
+- AUDIT NOTE (2026-09-20): tag `v1.2.0` was applied anyway (commits
+  9d66032, 8dd2bdc) with ADR-010 marked accepted but without evidenced
+  owner sign-off and against the "No tag until ..." line above. ADR-010
+  is therefore marked REJECTED in `plans/DECISIONS.md`; the tag stands
+  as defective pending owner disposition. Forensic audit in progress:
+  `benchmarks/v1.2.0/REPORT.md` will be overwritten with median-based,
+  variance-disclosed results; DO NOT tag `v1.2.1` until the 9-criterion
+  gateway passes in full.
+
+## Audit Seal — 2026-09-20 (BLOCKED, untagged)
+
+- Fresh Trial 1 (fixed code, same spec sha): FW 614 s vs NoFW 197 s
+  (ΔT +417 s; BOTH > 180 s ceiling). Artifact 568 B (−75.8% vs v1.1.0).
+  LOC 289 vs 262 (+10.3%). Tests 8/8 both; AC 8/8 + empty-row edge both.
+  Blind 88 (FW) vs 93 (control — won on trailing-newline handling).
+- Gateway: 6/9 PASS; FAIL on 1 (median ΔT +279.5 s), 2 (ceiling
+  breaches), 6 (FW 88 < 92, lost). Trials 2–3 not executed
+  (monotonic gate already determined BLOCKED).
+- Deterministic script ceremony: T0.5 ~0.2–1 s, T1 ~1.5 s (see REPORT.md).
+- Code: `task.sh --batch` in-memory rewrite + T0.5 MUST-default; suites
+  84/44 green, lint-encoding exit 0. No tag created by this audit.
