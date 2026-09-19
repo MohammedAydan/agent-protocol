@@ -59,6 +59,7 @@ case "$TIER" in
   T1)
     mkdir -p "$TARGET"
     cat > "${TARGET}/plan.md" <<EOT
+<!-- T1: task.sh defaults to '## Tasks'. Use --acceptance for '## Acceptance'. See AGENTS.md. -->
 # ${NAME}
 
 **Complexity**: T1

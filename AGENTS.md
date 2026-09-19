@@ -84,6 +84,12 @@ Empty `plan.md` / empty Tasks while writing production code = protocol violation
 - Order: `task … start` → code → verify → `task … done`.
 - Stay in scope. Related work → new `[ ]` item.
 
+#### T1 checkbox semantics
+- `task.sh <dir> <n>` on T1 counts `## Tasks` section by default.
+- `task.sh --acceptance <dir> <n>` counts `## Acceptance`.
+- `task.sh --section tasks|acceptance` for explicit selection.
+- `--file plan.md` still counts ALL checkboxes (v1.0.0 behavior).
+
 ### 3) Verify (required before `[x]`)
 
 - Lint/format pass when the project has them.

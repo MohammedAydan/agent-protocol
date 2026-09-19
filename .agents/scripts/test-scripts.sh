@@ -266,6 +266,11 @@ check_out "lint-encoding detects CRLF in .sh" "CRLF" bash -c "cd '$LDIR' && bash
 check_out "lint-encoding guards .gitattributes eol=lf" "missing required line" bash -c "cd '$LDIR' && bash .agents/scripts/lint-encoding.sh"
 rm -rf "$LDIR"
 
+# D7: T1 checkbox semantics documentation
+check "AGENTS.md documents T1 checkbox semantics" grep -q "T1 checkbox semantics" "$ROOT/AGENTS.md"
+check "T1 template contains D7 comment" grep -q "T1: task.sh defaults to '## Tasks'" "$ROOT/.agents/templates/T1-plan.md"
+check_out "new-plan.sh --help prints T1 rule" "T1 rule: task.sh defaults to '## Tasks'" bash .agents/scripts/new-plan.sh --help
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
