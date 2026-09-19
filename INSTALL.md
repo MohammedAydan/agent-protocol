@@ -2,6 +2,40 @@
 
 **Repo:** https://github.com/MohammedAydan/agent-protocol
 
+## Windows (PowerShell) — global CLI
+
+```powershell
+irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.ps1 | iex
+```
+
+Close the window, open a **new** PowerShell:
+
+```powershell
+agent-protocol version
+cd D:\path\to\your-project
+agent-protocol init --here --adapters none
+agent-protocol update
+agent-protocol upgrade
+```
+
+Requires [Git for Windows](https://git-scm.com/download/win) (bash).
+
+### Project-only install (no global)
+
+```powershell
+irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
+```
+
+---
+
+## macOS / Linux / Git Bash — global CLI
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.sh | bash
+export PATH="$HOME/.local/bin:$PATH"
+agent-protocol version
+```
+
 ## A) Global CLI (recommended)
 
 ```bash
