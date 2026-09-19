@@ -271,6 +271,10 @@ check "AGENTS.md documents T1 checkbox semantics" grep -q "T1 checkbox semantics
 check "T1 template contains D7 comment" grep -q "T1: task.sh defaults to '## Tasks'" "$ROOT/.agents/templates/T1-plan.md"
 check_out "new-plan.sh --help prints T1 rule" "T1 rule: task.sh defaults to '## Tasks'" bash .agents/scripts/new-plan.sh --help
 
+# D11: --ascii flag in doctor.sh and status.sh
+check_out "doctor.sh --ascii prints [OK]" "[OK]" bash .agents/scripts/doctor.sh --ascii
+check_exit0 "status.sh --ascii exits 0" bash .agents/scripts/status.sh --ascii
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]

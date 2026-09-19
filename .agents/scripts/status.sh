@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # status.sh — Overview of active plans and open tasks.
-# Usage: status.sh [plans-root]
+# Usage: status.sh [--ascii] [plans-root]
 # Portable: no process substitution. Skips plans/_archive/.
 
 set -euo pipefail
 
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  sed -n '2,5p' "$0"
-  exit 0
-fi
+ASCII=0
+ROOT="plans"
 
-ROOT="${1:-plans}"
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) sed -n '2,5p' "$0"; exit 0 ;;
+    --ascii) ASCII=1 ;;
+    *) [[ -d "$arg" ]] && ROOT="$arg" ;;
+  esac
+done
 
 if [[ ! -d "$ROOT" ]]; then
   echo "No plans/ directory. Run bootstrap.sh first."

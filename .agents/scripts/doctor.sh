@@ -1,19 +1,27 @@
 #!/usr/bin/env bash
 # doctor.sh — Self-audit plans/ structure against protocol rules.
-# Usage: doctor.sh
+# Usage: doctor.sh [--ascii]
 # Exit 0 = healthy, 1 = issues found.
 # Portable: no process substitution. Skips plans/_archive/ for plan-structure checks.
 
 set -euo pipefail
 
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  sed -n '2,6p' "$0"
-  exit 0
-fi
+ASCII=0
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) sed -n '2,6p' "$0"; exit 0 ;;
+    --ascii) ASCII=1 ;;
+  esac
+done
 
 ISSUES=0
-warn() { echo "⚠  $1"; ISSUES=$((ISSUES + 1)); }
-ok()   { echo "✓  $1"; }
+if [[ "$ASCII" -eq 1 ]]; then
+  warn() { echo "[WARN] $1"; ISSUES=$((ISSUES + 1)); }
+  ok()   { echo "[OK]   $1"; }
+else
+  warn() { echo "⚠  $1"; ISSUES=$((ISSUES + 1)); }
+  ok()   { echo "✓  $1"; }
+fi
 
 echo "=== Agent Protocol doctor ==="
 echo ""
