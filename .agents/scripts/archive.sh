@@ -45,14 +45,25 @@ archive_one() {
 
   mkdir -p plans/_archive
   local name rel dest
+  target="${target%/}"
   name=$(basename "$target")
   rel="${target#plans/}"
-  dest="plans/_archive/${name}"
+  if [[ "$rel" == *"/"* ]]; then
+    dest="plans/_archive/${rel}"
+    mkdir -p "$(dirname "$dest")"
+  else
+    dest="plans/_archive/${name}"
+  fi
   if [[ -e "$dest" ]]; then dest="${dest}-$(date -u +%Y%m%d%H%M%S)"; fi
   mv "$target" "$dest"
   _remove_active_plan "$name" "$rel"
   echo "archived: $target → $dest"
 }
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,4p' "$0"
+  exit 0
+fi
 
 if [[ "${1:-}" == "--all" ]]; then
   tmp=$(mktemp); rc=0

@@ -87,6 +87,7 @@ done
 run close-plan.sh --force plans/epic-x/01-a >/dev/null
 printf '%s\n' '# R' '## Built' '- a' > plans/epic-x/01-a/review.md
 run archive.sh plans/epic-x/01-a >/dev/null
+[[ -d plans/_archive/epic-x/01-a ]] && ok "nested archive preserves parent" || bad "nested archive preserves parent"
 ap=$(grep 'Active Plans:' plans/context.md)
 echo "$ap" | grep -q '01-a' && bad "01-a still active: $ap" || ok "nested remove from active"
 echo "$ap" | grep -q 'epic-x' && ok "parent still active" || bad "parent lost"
@@ -96,6 +97,9 @@ out=$(run status.sh 2>&1 || true)
 echo "$out" | grep -q '_archive/valid-name' && bad "status shows archive" || ok "status hides archive"
 run doctor.sh >/dev/null 2>&1 || true
 ok "doctor runs"
+mkdir -p plans/_archive/legacy-child
+printf '%s\n' '# Review' '## Built' '- legacy' > plans/_archive/legacy-child/review.md
+run doctor.sh >/dev/null 2>&1 && ok "legacy archive readable by doctor" || bad "legacy archive readable by doctor"
 
 # --- 10 session-log / update-doc ---
 run session-log.sh "s" "d" "dec" "files" "resume" >/dev/null

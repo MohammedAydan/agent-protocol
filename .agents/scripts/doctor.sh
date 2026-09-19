@@ -124,7 +124,7 @@ if [[ -f plans/context.md ]]; then
   while IFS= read -r entry; do
     [[ -z "$entry" || "$entry" == "none" || "$entry" == "TBD" ]] && continue
     short="${entry#plans/}"
-    if [[ ! -d "plans/${short}" && ! -d "plans/_archive/${short}" ]]; then
+    if [[ ! -d "plans/${short}" && ! -d "plans/_archive/${short}" && ! -d "plans/_archive/$(basename "${short}")" ]]; then
       warn "Active Plans mentions '${entry}' but no such plan folder"
     fi
   done < "$tmp_ap"
