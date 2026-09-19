@@ -24,12 +24,13 @@ case "$CMD" in
   bootstrap)   run bootstrap.sh "$@" ;;
   init)        run init.sh "$@" ;;
   update)      run update-project.sh "$@" ;;
+  lint)        run lint-encoding.sh "$@" ;;
   stress)      run test-stress.sh "$@" ;;
   help|-h|--help)
     cat <<USAGE
 Usage: protocol.sh <command> [args]
   boot|resume | new | task | status | list | next | promote
-  close | archive | log | doc | doctor | verify | test | stress | sync | bootstrap | init | update
+  close | archive | log | doc | doctor | verify | test | stress | sync | bootstrap | init | update | lint
 USAGE
     exit 0
     ;;

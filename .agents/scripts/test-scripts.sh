@@ -239,6 +239,33 @@ else
   echo "FAIL  all protocol scripts support --help ($d4_fail failed)"; fail=$((fail+1))
 fi
 
+# D6 / D9: lint-encoding.sh tests
+LDIR=$(mktemp -d)
+(
+  cd "$LDIR"
+  git init -q
+  cp "$ROOT/.gitattributes" .
+  mkdir -p .agents/scripts
+  cp "$ROOT/.agents/scripts/lint-encoding.sh" .agents/scripts/
+  git add .gitattributes .agents/scripts/lint-encoding.sh
+  git commit -qm "init"
+)
+check_exit0 "lint-encoding clean repo exits 0" bash -c "cd '$LDIR' && bash .agents/scripts/lint-encoding.sh"
+
+printf '\xef\xbb\xbf# test' > "$LDIR/test-bom.txt"
+( cd "$LDIR" && git add test-bom.txt )
+check_out "lint-encoding detects BOM" "UTF-8 BOM detected" bash -c "cd '$LDIR' && bash .agents/scripts/lint-encoding.sh"
+( cd "$LDIR" && git rm -qf test-bom.txt )
+
+printf '#!/usr/bin/env bash\r\necho hi\r\n' > "$LDIR/bad.sh"
+( cd "$LDIR" && git add bad.sh )
+check_out "lint-encoding detects CRLF in .sh" "CRLF" bash -c "cd '$LDIR' && bash .agents/scripts/lint-encoding.sh"
+( cd "$LDIR" && git rm -qf bad.sh )
+
+( cd "$LDIR" && sed -i.bak '/\*\.sh text eol=lf/d' .gitattributes )
+check_out "lint-encoding guards .gitattributes eol=lf" "missing required line" bash -c "cd '$LDIR' && bash .agents/scripts/lint-encoding.sh"
+rm -rf "$LDIR"
+
 echo ""
 echo "Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
