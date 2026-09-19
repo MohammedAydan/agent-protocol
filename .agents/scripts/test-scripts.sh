@@ -149,6 +149,36 @@ check "session-log" grep -q "test" plans/SESSION_LOG.md
 bash .agents/scripts/verify-checklist.sh >/dev/null 2>&1
 check "verify-checklist" true
 
+# D5: verify-checklist.sh --strict
+bash .agents/scripts/new-plan.sh T1 v-open >/dev/null 2>&1
+out_open=$(bash .agents/scripts/verify-checklist.sh --strict plans/v-open 2>&1 || true)
+rc_open=0
+bash .agents/scripts/verify-checklist.sh --strict plans/v-open >/dev/null 2>&1 || rc_open=$?
+if [[ "$rc_open" -ne 0 ]] && echo "$out_open" | grep -qE 'plan\.md:[0-9]+:'; then
+  echo "PASS  verify-checklist --strict flags open tasks with line numbers"; pass=$((pass+1))
+else
+  echo "FAIL  verify-checklist --strict flags open tasks with line numbers"; fail=$((fail+1))
+fi
+
+bash .agents/scripts/task.sh plans/v-open 1 done >/dev/null 2>&1
+bash .agents/scripts/task.sh plans/v-open 2 done >/dev/null 2>&1
+bash .agents/scripts/task.sh --acceptance plans/v-open 1 done >/dev/null 2>&1
+rc_clean=0
+bash .agents/scripts/verify-checklist.sh --strict plans/v-open >/dev/null 2>&1 || rc_clean=$?
+if [[ "$rc_clean" -eq 0 ]]; then
+  echo "PASS  verify-checklist --strict clean plan exits 0"; pass=$((pass+1))
+else
+  echo "FAIL  verify-checklist --strict clean plan exits 0"; fail=$((fail+1))
+fi
+
+rc_compat=1
+bash .agents/scripts/verify-checklist.sh plans/open-guard >/dev/null 2>&1 && rc_compat=0 || true
+if [[ "$rc_compat" -eq 0 ]]; then
+  echo "PASS  verify-checklist default mode exits 0"; pass=$((pass+1))
+else
+  echo "FAIL  verify-checklist default mode exits 0"; fail=$((fail+1))
+fi
+
 bash .agents/scripts/update-doc.sh stack "Test" "X" "1" "reason" >/dev/null 2>&1
 check "update-doc stack" grep -q "Test" plans/TECH_STACK.md
 

@@ -88,6 +88,7 @@ Empty `plan.md` / empty Tasks while writing production code = protocol violation
 
 - Lint/format pass when the project has them.
 - Tests/checks implied by acceptance against **real** output.
+- `verify-checklist.sh --strict plans/<name>` is the CI gate (exits non-zero if unresolved tasks remain).
 - UI: open in browser or describe visual check when harness allows.
 - JS/TS: syntax check (`node --check` / project test runner) when applicable.
 
