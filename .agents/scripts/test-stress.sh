@@ -173,6 +173,31 @@ sed -i.bak 's/- \[ \]/- [x]/' plans/epic-d12/OVERVIEW.md
 run close-plan.sh plans/epic-d12 >/dev/null && ok "close-plan accepts resolved OVERVIEW.md" || bad "close-plan accepts resolved OVERVIEW.md"
 run archive.sh plans/epic-d12 >/dev/null && ok "archive accepts resolved OVERVIEW.md" || bad "archive accepts resolved OVERVIEW.md"
 
+# --- 22 promote regression guard (D13) ---
+run new-plan.sh T1 promo-d13 >/dev/null
+printf '%s\n' '- [ ] task three' >> plans/promo-d13/plan.md
+run promote.sh plans/promo-d13 >/dev/null
+if [[ -f plans/promo-d13/tasks.md && -f plans/promo-d13/context.md ]]; then
+  tasks_count=$(grep -cE '^- \[ \]' plans/promo-d13/tasks.md || true)
+  if [[ "$tasks_count" -ge 3 ]]; then
+    ok "promote preserves 3 tasks"
+  else
+    bad "promote lost tasks: count=$tasks_count"
+  fi
+  if grep -q "T1: task.sh defaults" plans/promo-d13/plan.md; then
+    ok "D7 comment preserved in plan.md"
+  else
+    bad "D7 comment lost from plan.md"
+  fi
+  if grep -q "T1: task.sh defaults" plans/promo-d13/tasks.md; then
+    bad "D7 comment leaked into tasks.md"
+  else
+    ok "D7 comment absent from tasks.md"
+  fi
+else
+  bad "promote failed to create tasks/context"
+fi
+
 echo ""
 echo "STRESS Results: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
