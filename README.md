@@ -35,19 +35,24 @@ Always choose the **lowest viable tier**. Unsure → ask the human.
 
 ## Install
 
-**Windows (PowerShell)** — asks which harness (default: none / clean):
+### Global CLI (best)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.sh | bash
+export PATH="$HOME/.local/bin:$PATH"
+
+agent-protocol init --here --adapters cursor,claude
+agent-protocol update          # refresh this project (keeps plans/)
+agent-protocol upgrade         # upgrade global package from GitHub
+```
+
+### Windows PowerShell
 
 ```powershell
 irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
 ```
 
-**macOS / Linux / Git Bash:**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.sh | bash -s -- --here
-```
-
-Shortcuts & details: [INSTALL.md](INSTALL.md)
+Full guide: [INSTALL.md](INSTALL.md)
 
 
 ## Layout

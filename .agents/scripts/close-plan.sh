@@ -54,24 +54,40 @@ EOT
   echo "created ${REVIEW}"
 fi
 
-# Remove from Active Plans (closed but not yet archived still OK to drop from "active")
-if [[ -f plans/context.md ]]; then
-  name=$(basename "$TARGET")
-  # Handle both "name" and "parent/name"
-  rel="${TARGET#plans/}"
+# Remove from Active Plans — safe under pipefail (last plan → "none")
+_remove_active_plan() {
+  local target="$1"
+  [[ -f plans/context.md ]] || return 0
+  local name rel ap list item keep new_ap
+  name=$(basename "$target")
+  rel="${target#plans/}"
   ap=$(grep -E '^Active Plans:' plans/context.md | head -1 || true)
-  if [[ -n "$ap" ]]; then
-    # strip name or rel from comma list
-    new_ap=$(echo "$ap" | sed "s|^Active Plans: *||" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -vx "$name" | grep -vx "$rel" | paste -sd ', ' -)
+  [[ -z "$ap" ]] && return 0
+  list="${ap#Active Plans:}"
+  list="${list#"${list%%[![:space:]]*}"}"  # trim leading space
+  new_ap=""
+  # shellcheck disable=SC2086
+  IFS=',' read -ra parts <<< "$list"
+  for item in "${parts[@]}"; do
+    item="${item#"${item%%[![:space:]]*}"}"
+    item="${item%"${item##*[![:space:]]}"}"
+    [[ -z "$item" ]] && continue
+    [[ "$item" == "$name" || "$item" == "$rel" ]] && continue
     if [[ -z "$new_ap" ]]; then
-      sed -i.bak "s|^Active Plans:.*|Active Plans: none|" plans/context.md
+      new_ap="$item"
     else
-      sed -i.bak "s|^Active Plans:.*|Active Plans: ${new_ap}|" plans/context.md
+      new_ap="${new_ap}, ${item}"
     fi
-    rm -f plans/context.md.bak
-    echo "Active Plans updated (removed ${rel})"
+  done
+  if [[ -z "$new_ap" ]]; then
+    sed -i.bak "s|^Active Plans:.*|Active Plans: none|" plans/context.md
+  else
+    sed -i.bak "s|^Active Plans:.*|Active Plans: ${new_ap}|" plans/context.md
   fi
-fi
+  rm -f plans/context.md.bak
+  echo "Active Plans updated (removed ${rel})"
+}
+_remove_active_plan "$TARGET"
 
 echo ""
 echo "Finish manually (or let the agent):"

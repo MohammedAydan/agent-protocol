@@ -36,7 +36,12 @@ Prefer `.agents/scripts/resume.sh` (cheapest). Otherwise:
 
 Missing `plans/` → `.agents/scripts/bootstrap.sh`.
 
-**Windows:** run scripts via Git Bash (`bash .agents/scripts/…`). Do not paste bash `||` / heredoc one-liners into PowerShell — use `bash -lc '…'` or native PowerShell.
+**Windows (Git Bash required for scripts):**
+```text
+bash .agents/scripts/resume.sh
+bash -lc "bash .agents/scripts/task.sh plans/my-plan 1 start"
+```
+Prefer **numeric** task specs (avoids quoting). Run scripts **sequentially** per plan folder (no parallel `task.sh` on the same folder). Do not paste bash `||` / `&&` / heredocs into PowerShell.
 
 ---
 

@@ -91,6 +91,13 @@ while IFS= read -r dir; do
     done
     if [[ "$open_left" -eq 0 ]]; then
       ok "$rel has review.md (candidate for archive.sh)"
+      # empty stub? Built section still blank
+      if grep -qE '^## Built' "${dir}/review.md" 2>/dev/null; then
+        built_body=$(awk '/^## Built/{f=1;next} /^## /{f=0} f' "${dir}/review.md" | sed '/^$/d' | sed 's/^[- ]*//' | grep -v '^$' || true)
+        if [[ -z "$built_body" ]]; then
+          warn "$rel/review.md looks empty (fill Built/Edge cases before archive or accept as stub)"
+        fi
+      fi
     fi
   fi
 done < "$tmp"

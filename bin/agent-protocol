@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+# agent-protocol — Global CLI for Agent Protocol
+#
+# Install globally:
+#   curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.sh | bash
+#   # or: bash path/to/package/install-global.sh
+#
+# Commands:
+#   agent-protocol init [--here] [--adapters ...]
+#   agent-protocol update [--force] [--adapters ...]   # update THIS project from global package
+#   agent-protocol upgrade                              # upgrade global package from GitHub
+#   agent-protocol self-update                          # alias of upgrade
+#   agent-protocol doctor | status | resume | test | stress | version | help
+#   agent-protocol <any protocol.sh command>
+#
+set -euo pipefail
+
+VERSION="1.0.0"
+OWNER="${AGENT_PROTOCOL_OWNER:-MohammedAydan}"
+REPO="${AGENT_PROTOCOL_REPO:-agent-protocol}"
+REF="${AGENT_PROTOCOL_REF:-main}"
+
+# Resolve package root: env → next to this script → ~/.local/share/agent-protocol
+resolve_pkg() {
+  if [[ -n "${AGENT_PROTOCOL_HOME:-}" && -f "${AGENT_PROTOCOL_HOME}/AGENTS.md" ]]; then
+    echo "$AGENT_PROTOCOL_HOME"; return
+  fi
+  local here
+  here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  if [[ -f "$here/AGENTS.md" && -d "$here/.agents/scripts" ]]; then
+    echo "$here"; return
+  fi
+  local home="${HOME}/.local/share/agent-protocol"
+  if [[ -f "$home/AGENTS.md" ]]; then
+    echo "$home"; return
+  fi
+  echo "$here"
+}
+
+PKG="$(resolve_pkg)"
+SCRIPTS="$PKG/.agents/scripts"
+run_script() { bash "$SCRIPTS/$1" "${@:2}"; }
+
+usage() {
+  cat <<USAGE
+Agent Protocol CLI v${VERSION}
+
+Usage:
+  agent-protocol <command> [args]
+
+Project:
+  init [--here] [--force] [--adapters all|none|list]   Install protocol into a project
+  update [--force] [--adapters ...]                      Refresh protocol files in cwd project
+                                                         (plans/ never deleted)
+  doctor | status | resume | test | stress               Run project tools (cwd)
+
+Global:
+  upgrade | self-update                                  Download latest package to global home
+  version                                                Print versions
+  home                                                   Print package path
+
+Any protocol command:
+  new | task | close | archive | log | doc | promote | list | next | verify | sync | bootstrap
+
+Env:
+  AGENT_PROTOCOL_HOME   Global package directory
+  AGENT_PROTOCOL_OWNER  GitHub owner (default MohammedAydan)
+  AGENT_PROTOCOL_REPO   GitHub repo  (default agent-protocol)
+  AGENT_PROTOCOL_REF    Branch/tag   (default main)
+USAGE
+}
+
+cmd_upgrade() {
+  local dest="${AGENT_PROTOCOL_HOME:-$HOME/.local/share/agent-protocol}"
+  local tmp archive url
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' RETURN
+  echo "=== Upgrade global Agent Protocol ==="
+  echo "  dest: $dest"
+  if [[ "$REF" == "main" || "$REF" == "master" ]]; then
+    url="https://github.com/${OWNER}/${REPO}/archive/refs/heads/${REF}.tar.gz"
+  else
+    url="https://github.com/${OWNER}/${REPO}/archive/refs/tags/${REF}.tar.gz"
+  fi
+  echo "  url : $url"
+  archive="$tmp/p.tgz"
+  curl -fsSL --proto '=https' --tlsv1.2 "$url" -o "$archive"
+  tar -xzf "$archive" -C "$tmp"
+  local extracted
+  extracted="$(find "$tmp" -maxdepth 1 -type d -name "${REPO}-*" | head -1)"
+  [[ -f "$extracted/AGENTS.md" ]] || { echo "ERROR: bad archive"; exit 1; }
+  mkdir -p "$dest"
+  # Preserve nothing critical in global home except we replace package files
+  rsync -a --delete \
+    --exclude '.git' \
+    "$extracted"/ "$dest"/
+  mkdir -p "$HOME/.local/bin"
+  ln -sfn "$dest/bin/agent-protocol" "$HOME/.local/bin/agent-protocol"
+  chmod +x "$dest/bin/agent-protocol" 2>/dev/null || true
+  echo "1.0.0" > "$dest/VERSION" 2>/dev/null || true
+  echo "=== Global package upgraded → $dest ==="
+  echo "  Ensure ~/.local/bin is on PATH"
+  echo "  Then in projects: agent-protocol update"
+}
+
+cmd_version() {
+  echo "CLI: $VERSION"
+  echo "PKG: $PKG"
+  if [[ -f "$PKG/.agents/PROTOCOL_VERSION" ]]; then
+    echo "PROTOCOL_VERSION file: $(cat "$PKG/.agents/PROTOCOL_VERSION")"
+  fi
+  if [[ -f "$PKG/VERSION" ]]; then
+    echo "VERSION file: $(cat "$PKG/VERSION")"
+  fi
+  if [[ -f "AGENTS.md" ]]; then
+    local v
+    v=$(grep -E '^Version:' AGENTS.md | head -1 || true)
+    echo "Project AGENTS.md: ${v:-unknown}"
+  fi
+}
+
+CMD="${1:-help}"
+shift || true
+
+case "$CMD" in
+  help|-h|--help) usage ;;
+  version|--version|-V) cmd_version ;;
+  home) echo "$PKG" ;;
+  upgrade|self-update) cmd_upgrade "$@" ;;
+  init)
+    run_script init.sh "$@"
+    ;;
+  update)
+    # Always update FROM global/package home INTO cwd project
+    run_script update-project.sh --from "$PKG" --here "$@"
+    ;;
+  doctor|status|resume|test|stress|new|task|close|archive|log|doc|promote|list|next|verify|sync|bootstrap)
+    if [[ "$CMD" == "stress" ]]; then
+      run_script test-stress.sh "$@"
+    elif [[ "$CMD" == "test" ]]; then
+      run_script test-scripts.sh "$@"
+    else
+      # map to protocol.sh
+      if [[ -f .agents/scripts/protocol.sh ]]; then
+        bash .agents/scripts/protocol.sh "$CMD" "$@"
+      else
+        bash "$SCRIPTS/protocol.sh" "$CMD" "$@"
+      fi
+    fi
+    ;;
+  *)
+    # fallback to protocol.sh
+    if [[ -f .agents/scripts/protocol.sh ]]; then
+      bash .agents/scripts/protocol.sh "$CMD" "$@"
+    else
+      bash "$SCRIPTS/protocol.sh" "$CMD" "$@"
+    fi
+    ;;
+esac

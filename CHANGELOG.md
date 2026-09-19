@@ -2,6 +2,25 @@
 
 ## 1.0.0 — 2026-09-19
 
+### Tooling patch (same 1.0.0)
+
+- **Global CLI** `bin/agent-protocol` + `install-global.sh`
+  - `agent-protocol init | update | upgrade | doctor | test | stress | version`
+- **`update-project.sh`**: refresh protocol in a project from global package; **never deletes `plans/`**
+- **`test-stress.sh`**: 33 edge-case tests (nested Active Plans, last-plan, markers, archive safety)
+- Smoke: 29 passed · Stress: 33 passed
+- Fixed self-copy bug when `update` ran without global home
+
+
+### Hardening patch (same 1.0.0 — post benchmark)
+
+- **close-plan / archive:** Active Plans removal safe under `pipefail` when removing the **last** plan (`Active Plans: none`, exit 0)
+- **task.sh:** `--file plan.md|tasks.md` and `--acceptance` for T2 acceptance boxes
+- **doctor:** warns on empty `review.md` stubs
+- **test-scripts.sh:** isolated temp workdir + last-plan regression + acceptance flags
+- **AGENTS.md:** Windows `bash -lc` calling convention + sequential task.sh note
+
+
 **First production release.**
 
 Stable, token-efficient protocol for AI coding agents across 30+ harnesses.

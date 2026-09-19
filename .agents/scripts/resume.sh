@@ -3,20 +3,31 @@
 set -euo pipefail
 R="plans"
 echo "=== SESSION RESUME ==="
-[[ -f "$R/context.md" ]] && head -n 8 "$R/context.md" || echo "(no context — bootstrap.sh)"
+if [[ -f "$R/context.md" ]]; then head -n 8 "$R/context.md"; else echo "(no context — bootstrap.sh)"; fi
 echo ""
 echo "--- last log ---"
-[[ -f "$R/SESSION_LOG.md" ]] && awk '/^## /{buf=$0; next} {if(buf) buf=buf"\n"$0} END{print buf}' "$R/SESSION_LOG.md" | tail -n 6 || echo "(no log)"
+if [[ -f "$R/SESSION_LOG.md" ]]; then
+  awk '/^## /{buf=$0; next} {if(buf) buf=buf"\n"$0} END{print buf}' "$R/SESSION_LOG.md" | tail -n 6
+else
+  echo "(no log)"
+fi
 echo ""
 echo "--- next (max 3) ---"
-tmp=$(mktemp); find "$R" -type d -not -path '*/_archive*' 2>/dev/null > "$tmp" || true
+tmp=$(mktemp)
+find "$R" -type d -not -path '*/_archive*' 2>/dev/null > "$tmp" || true
 c=0
 while IFS= read -r dir && [[ $c -lt 3 ]]; do
   [[ -z "$dir" || "$dir" == "$R" ]] && continue
   for f in "${dir}/tasks.md" "${dir}/plan.md"; do
     [[ -f "$f" ]] || continue
     line=$(grep -E '^\- \[ \]|^\- \[~\]' "$f" 2>/dev/null | head -1 || true)
-    [[ -n "$line" ]] && { echo "• ${dir#plans/}: $line"; c=$((c+1)); break; }
+    if [[ -n "$line" ]]; then
+      echo "• ${dir#plans/}: $line"
+      c=$((c+1))
+      break
+    fi
   done
-done < "$tmp"; rm -f "$tmp"
-[[ $c -eq 0 ]] && echo "(all clear)"
+done < "$tmp"
+rm -f "$tmp"
+if [[ $c -eq 0 ]]; then echo "(all clear)"; fi
+exit 0
