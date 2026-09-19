@@ -5,7 +5,7 @@
 - **Release Date**: 2026-09-19
 - **Certifier**: Principal Framework Engineer
 - **Environment**: Microsoft Windows (NT 10.0), PowerShell 5.1 / PowerShell 7+, Git Bash (MSYS2 / bash 5.2)
-- v1.1.0 tag sealed at commit 8a45dd0.
+- **Tag:** `v1.1.0` (annotated) — the tag points to the commit that contains this line. Verify with: `test "$(git rev-parse v1.1.0^{commit})" = "$(git rev-parse HEAD)"`
 
 ---
 
@@ -56,7 +56,7 @@
 ---
 
 ## Commit Accounting & History
-- Total commit count: 19 commits = 4 (Phase 0.5) + 13 (D-items, D6+D9 merged) + 1 (CLI alignment) + 1 (release bump 2d00dca).
+- **Commit count:** from baseline `aad77e1` to the sealed commit — run `git rev-list --count aad77e1..HEAD` for the exact number.
 - Includes parity alignment commit `c7432b9`: `chore(cli): align PowerShell Install-Init with bash init` (ADR-006).
 
 ---
