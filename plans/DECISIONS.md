@@ -85,3 +85,60 @@
 - **Alternatives considered:** Revert and re-issue as separate D14 — rejected
   because it ships the same fix that D8's parity gate requires.
 - **Consequences:** D8 now covers both update path and init path.
+
+## ADR-007 — Tier-cost table and T0.5 fast path (OPT-1, OPT-6)
+
+- **Date:** 2026-09-19
+- **Status:** Accepted
+- **Context:** v1.1.0 A/B showed +162 s wall-clock on a T1 task; part of
+  the cost is fixed planning ceremony (folder + 3 files + review stub +
+  log entry) regardless of task size. Token counts are unavailable in
+  most harnesses, so costs are stated as rough token proxies.
+- **Decision:** Add tier T0.5 (`plans/_quick/<name>.md`, Task + Verify
+  only, no folder/review/Active Plans/close ceremony) and publish a
+  Typical-setup-cost table (T0 ~0 / T0.5 ~50 / T1 ~200 / T2 ~500 /
+  T3 ~1500 tokens) in `AGENTS.md` and the plan-manager skill.
+- **Alternatives considered:** Shrinking T1 only (done as OPT-2, kept) —
+  insufficient alone: T1 still costs a folder + close + log. Making
+  costs machine-enforced budgets — rejected: no reliable token meter in
+  the harness; numbers are guidance, re-calibrated per benchmark.
+- **Consequences:** Agents should pick T0.5 for ≤3-file single-decision
+  work; benchmark target is T0.5 uptake ≥80% on CSV-class tasks.
+
+## ADR-008 — Batch task operations via recursive single calls (OPT-4)
+
+- **Date:** 2026-09-19
+- **Status:** Accepted
+- **Context:** v1.1.0 needs 2N `task.sh` invocations for N checkboxes
+  (start + done each). Agent round-trips dominate the overhead.
+- **Decision:** `task.sh --batch` reads `<n> <action>` pairs from stdin
+  and re-invokes itself per pair (same flags forwarded), stopping on
+  the first error. Recursion — not an in-process loop — so the one-`[~]`
+  invariant and all error paths are byte-identical to sequential runs
+  (proven by differential test).
+- **Alternatives considered:** In-process loop over the state machine —
+  rejected: duplicates transition logic, risks parity drift on every
+  future `task.sh` change.
+- **Consequences:** One agent round-trip per plan; N cheap local
+  subprocess spawns internally (unmetered, sub-second).
+
+## ADR-009 — Close enforcement with tier exemptions (OPT-5)
+
+- **Date:** 2026-09-19
+- **Status:** Accepted
+- **Context:** v1.1.0 A/B arms shipped empty `review.md`, stale
+  `plans/context.md`, and zero commits in 2/2 runs — the framework asked
+  but never verified.
+- **Decision:** Non-force `close-plan.sh` refuses (a) a pre-existing
+  `review.md` with an empty `## Built` section on T2/T3 plans, and
+  (b) any T1+ folder close while `plans/context.md` is still
+  `Bootstrapped`. T0.5/T1 are exempt from the review gate (one plan.md
+  line suffices). `--force` bypasses both. `doctor.sh` adds a
+  best-effort git warning for uncommitted `review.md`.
+- **Alternatives considered:** Enforcing review content on T1 — rejected:
+  would erase the T0.5/T1 lightness the release is buying. Blocking
+  `--force` entirely — rejected: recovery flows need an escape hatch.
+- **Consequences:** First-close still creates an empty stub (agent must
+  fill it per `AGENTS.md`); re-close and dirty-context closes are
+  refused with fix instructions. Existing suites set context status
+  before non-force closes.

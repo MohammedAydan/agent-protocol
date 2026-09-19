@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.2.0 — 2026-09-19
+
+### Efficiency Release (OPT-1–OPT-7)
+
+Target: ≥50% less framework wall-clock overhead and ≥40% fewer overhead
+bytes on T1-class tasks vs v1.1.0, with zero behavioral regression.
+Proof: `benchmarks/v1.2.0/REPORT.md`.
+
+- **OPT-1 (T0.5 fast path):** `new-plan.sh T0.5 <name>` creates a single
+  `plans/_quick/<name>.md` (Task + Verify only) — no folder, no review,
+  no Active Plans entry; `resume.sh` lists it with a `[quick]` prefix;
+  `session-log.sh --brief` appends a one-line entry (`7e6f1a2`).
+- **OPT-2 (Slim T1):** `T1-plan.md` template and `new-plan.sh` heredoc
+  reduced to 8 lines (no Complexity line, no blank separators); v1.1.0
+  plans still parse (`8ee4f9f`).
+- **OPT-3 (Quiet scripts):** `-q` / `--quiet` on `doctor.sh` (≤5 lines:
+  `[OK] N checks passed` or `[FAIL]` per issue), `status.sh` (plan names
+  only), `resume.sh` (next lines only), `close-plan.sh` (review path
+  only), `task.sh` (WARNINGs suppressed); defaults byte-identical
+  (`f4f9092`).
+- **OPT-4 (Batch tasks):** `task.sh --batch <plan>` applies stdin
+  `<n> <action>` pairs via recursive single-call semantics (stops on
+  first error); differential test proves byte-parity with sequential
+  runs (`972e403`).
+- **OPT-5 (Enforcement):** non-force `close-plan.sh` refuses empty
+  `## Built` in a pre-existing `review.md` (T2/T3 only; T0.5/T1 exempt)
+  and refuses while `plans/context.md` is still `Bootstrapped`;
+  `doctor.sh` warns on uncommitted `review.md` (git best-effort);
+  `AGENTS.md` mandates fill-review + commit-per-plan (`a459437`).
+- **OPT-6 (Tier costs):** `AGENTS.md` and `plan-manager SKILL.md` carry a
+  Typical-setup-cost table (T0 ~0 / T0.5 ~50 / T1 ~200 / T2 ~500 /
+  T3 ~1500 tokens); `new-plan.sh --help` prefers T0.5 over T1
+  (`ba46f01`).
+- **OPT-7 (Audit tool):** new `measure-overhead.sh` prints
+  `[measure] plan=<n> bytes=<N> files=<M> span_s=<T> taskrefs=<R>`;
+  dispatched as `protocol.sh measure` (`456dcf9`).
+
 ## 1.1.0 — 2026-09-19
 
 ### Hardening Release (D1–D13)
