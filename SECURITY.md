@@ -1,4 +1,4 @@
-# Security notes (Agent Protocol 1.0.0)
+# Security notes (Agent Protocol 1.1.0)
 
 ## Install surface
 
@@ -11,7 +11,7 @@
 
 - HTTPS only; default allowlist `https://github.com/…` and `https://codeload.github.com/…`.
 - Downloads archive to a temp directory, validates `AGENTS.md` + `init.sh` exist, then runs local `init.sh`.
-- Prefer a **pinned tag** (`v1.0.0`). Default repo: `MohammedAydan/agent-protocol`.
+- Prefer a **pinned tag** (`v1.1.0`). Default repo: `MohammedAydan/agent-protocol`.
 - Prefer `git clone` + review when possible instead of piping `curl | bash`.
 
 ## Runtime scripts

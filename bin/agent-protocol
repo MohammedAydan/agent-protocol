@@ -15,7 +15,7 @@
 #
 set -euo pipefail
 
-VERSION="1.0.0"
+VERSION="1.1.0"
 OWNER="${AGENT_PROTOCOL_OWNER:-MohammedAydan}"
 REPO="${AGENT_PROTOCOL_REPO:-agent-protocol}"
 REF="${AGENT_PROTOCOL_REF:-main}"
@@ -97,7 +97,7 @@ cmd_upgrade() {
   mkdir -p "$HOME/.local/bin"
   ln -sfn "$dest/bin/agent-protocol" "$HOME/.local/bin/agent-protocol"
   chmod +x "$dest/bin/agent-protocol" 2>/dev/null || true
-  echo "1.0.0" > "$dest/VERSION" 2>/dev/null || true
+  echo "1.1.0" > "$dest/VERSION" 2>/dev/null || true
   echo "=== Global package upgraded → $dest ==="
   echo "  Ensure ~/.local/bin is on PATH"
   echo "  Then in projects: agent-protocol update"

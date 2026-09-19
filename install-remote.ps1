@@ -163,7 +163,7 @@ try {
   Copy-Proto "adapters"
   if (Want "claude") { Copy-Proto "CLAUDE.md" }
   if (Want "gemini") { Copy-Proto "GEMINI.md" }
-  "1.0.0" | Set-Content -Encoding ascii (Join-Path $Target ".agents\PROTOCOL_VERSION")
+  "1.1.0" | Set-Content -Encoding ascii (Join-Path $Target ".agents\PROTOCOL_VERSION")
 
   $plans = Join-Path $Target "plans"
   if (-not (Test-Path (Join-Path $plans "context.md"))) {

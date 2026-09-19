@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.1.0 — 2026-09-19
+
+### Hardening Release (D1–D13)
+
+- **D1 (`task.sh` section scoping):** Added `--section tasks|acceptance` flag; `task.sh` defaults to scoping numeric indices to `## Tasks` in `plan.md` for T1 plans, preventing index corruption from acceptance checkboxes (`5569b19`).
+- **D2 (Archive nesting):** `archive.sh` preserves nested T3 epic hierarchy under `plans/_archive/<epic>/<child>` instead of flattening into root `_archive/` (`55a02fd`).
+- **D3 (Windows documentation):** Added comprehensive `docs/WINDOWS.md` guide covering PowerShell 5.1, PowerShell 7+, and Git Bash environments; updated installer warnings and usage docs (`781fbcb`).
+- **D4 (CLI help flags):** Added `--help` / `-h` with exit 0 to all 19 protocol shell scripts (`b7eefe3`).
+- **D5 (Strict verification mode):** Added `--strict` mode to `verify-checklist.sh` that scans `tasks.md`, `plan.md`, and `OVERVIEW.md` and exits non-zero with file and line numbers for any open `[ ]`, `[~]`, or `[!]` tasks (`527f83e`).
+- **D6 & D9 (Encoding lint & gitattributes guard):** Added `.agents/scripts/lint-encoding.sh` checking for UTF-8 BOM, CRLF terminators in `.sh` files, and `.gitattributes` presence; wired into `protocol.sh lint` (`a3e7883`).
+- **D7 (T1 checkbox semantics):** Clarified T1 checkbox semantics in `AGENTS.md`, updated `T1-plan.md` template, and documented rules in `new-plan.sh --help` (`1e57299`).
+- **D8 (Unified update path):** Unified PowerShell `Update-Project` to delegate to `update-project.sh` via Git Bash when present; normalized fallback writes to UTF-8 no-BOM with LF line terminators; achieved clean `diff -r` parity (`733773c`).
+- **D10 (Plans policy):** Defined repo `plans/` policy under ADR-003 Option B: minimal brain files tracked, volatile plan folders ignored, installers verify clean isolation (`aad77e1`).
+- **D11 (ASCII-safe symbols):** Added `--ascii` flag to `doctor.sh` and `status.sh` providing `[OK]` and `[WARN]` indicators for raster consoles while preserving byte-identical UTF-8 defaults (`e7c16a5`).
+- **D12 (OVERVIEW.md scan):** `close-plan.sh` and `archive.sh` scan `OVERVIEW.md` for unresolved tasks before closing or archiving T3 epics (`bbcb862`).
+- **D13 (Promote regression guard):** Added stress test suite guard ensuring T1 to T2 promotion preserves all tasks and prevents HTML comments leaking into `tasks.md` (`f90aeef`).
+
 ## 1.0.0 — 2026-09-19
 
 ### Tooling patch (same 1.0.0)

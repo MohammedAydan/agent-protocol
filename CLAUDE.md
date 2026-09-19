@@ -2,7 +2,7 @@
 
 @AGENTS.md
 
-> Imports canonical rules (v1.0.0). AGENTS.md wins on conflict.
+> Imports canonical rules (v1.1.0). AGENTS.md wins on conflict.
 
 - Prefer `.agents/scripts/` (`resume`, `new-plan`, `task`, `close-plan`).
 - T1+: **fill** Goal/Acceptance/Tasks → `task start` → code → verify → `task done` → `close` + SESSION_LOG.

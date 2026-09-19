@@ -111,7 +111,7 @@ for sub in skills agents rules templates; do
     echo "  + .agents/$sub/"
   fi
 done
-echo "1.0.0" > "$TARGET/.agents/PROTOCOL_VERSION"
+echo "1.1.0" > "$TARGET/.agents/PROTOCOL_VERSION"
 
 if [[ "$FORCE" -eq 1 ]]; then
   if [[ -d "$PKG/adapters" ]]; then

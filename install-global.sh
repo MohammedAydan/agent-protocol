@@ -66,7 +66,7 @@ fi
 chmod +x "$DEST/bin/agent-protocol" 2>/dev/null || true
 chmod +x "$DEST/.agents/scripts/"*.sh 2>/dev/null || true
 ln -sfn "$DEST/bin/agent-protocol" "$BIN/agent-protocol"
-echo "1.0.0" > "$DEST/VERSION"
+echo "1.1.0" > "$DEST/VERSION"
 
 echo ""
 echo "=== Installed ==="

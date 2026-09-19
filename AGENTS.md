@@ -2,7 +2,7 @@
 
 > Canonical source of truth (Linux Foundation Agentic AI Foundation). Adapters stay thin and point here.
 
-Version: **1.0.0**
+Version: **1.1.0**
 
 ---
 
