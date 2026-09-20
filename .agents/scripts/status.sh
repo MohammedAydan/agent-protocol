@@ -1,10 +1,23 @@
 #!/usr/bin/env bash
 # status.sh — Overview of active plans and open tasks.
-# Usage: status.sh [plans-root]
+# Usage: status.sh [--ascii] [-q|--quiet] [plans-root]
 # Portable: no process substitution. Skips plans/_archive/.
+# In --quiet: only active plan names, one per line (or "(none yet)").
 
 set -euo pipefail
-ROOT="${1:-plans}"
+
+ASCII=0
+QUIET=0
+ROOT="plans"
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) sed -n '2,5p' "$0"; exit 0 ;;
+    --ascii) ASCII=1 ;;
+    -q|--quiet) QUIET=1 ;;
+    *) [[ -d "$arg" ]] && ROOT="$arg" ;;
+  esac
+done
 
 if [[ ! -d "$ROOT" ]]; then
   echo "No plans/ directory. Run bootstrap.sh first."
@@ -22,6 +35,23 @@ count_marker() {
   printf '%s' "${n:-0}"
 }
 
+if [[ "$QUIET" -eq 1 ]]; then
+  any=0
+  tmp=$(mktemp)
+  find "$ROOT" -type d -not -path '*/_archive*' 2>/dev/null > "$tmp" || true
+  while IFS= read -r dir; do
+    [[ -z "$dir" ]] && continue
+    rel="${dir#${ROOT}/}"
+    [[ -z "$rel" || "$rel" == "$dir" ]] && continue
+    if [[ -f "${dir}/plan.md" || -f "${dir}/OVERVIEW.md" ]]; then
+      any=1
+      echo "- ${rel}"
+    fi
+  done < "$tmp"
+  rm -f "$tmp"
+  [[ "$any" -eq 0 ]] && echo "(none yet)"
+  exit 0
+fi
 echo "=== context.md (head) ==="
 if [[ -f "${ROOT}/context.md" ]]; then
   head -n 12 "${ROOT}/context.md"

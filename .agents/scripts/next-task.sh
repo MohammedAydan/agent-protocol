@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,4p' "$0"
+  exit 0
+fi
+
 print_first_pending() {
   local f="$1"
   local label="$2"

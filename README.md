@@ -1,4 +1,4 @@
-# Agent Protocol 1.0.0
+# Agent Protocol 1.2.1
 
 **First production release.** Universal software-engineering protocol for AI coding agents.
 
@@ -38,6 +38,7 @@ Always choose the **lowest viable tier**. Unsure → ask the human.
 ### Global CLI (best)
 
 ```bash
+# macOS / Linux / Git Bash (on Windows use curl.exe; see docs/WINDOWS.md):
 curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -52,7 +53,7 @@ agent-protocol upgrade         # upgrade global package from GitHub
 irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-remote.ps1 | iex
 ```
 
-Full guide: [INSTALL.md](INSTALL.md)
+Full guide: [INSTALL.md](INSTALL.md) | Windows guide: [docs/WINDOWS.md](docs/WINDOWS.md)
 
 
 ## Layout
@@ -93,5 +94,8 @@ All plain bash. No external dependencies.
 
 ## Version
 
+**1.2.1** — governance release (`task.sh --quick` T0.5 parity, code-first guardrails, deterministic gates; `v1.2.0` superseded as defective).
+**1.2.0** — efficiency release (T0.5 fast path, slim T1, quiet scripts, batch tasks, close enforcement, tier costs, overhead audit).
+**1.1.0** — hardening release (Windows portability, task section scoping, strict verification, dual update unification, archive hierarchy).
 **1.0.0** — first production release.  
 Matured from internal 2.x iterations: adaptive T0–T3, task state machine, archive, Active Plans auto-update, token-optimized rules, hard ask-when-unsure, cross-tool adapters, unified smoke tests.

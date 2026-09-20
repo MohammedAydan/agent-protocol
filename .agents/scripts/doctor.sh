@@ -1,17 +1,41 @@
 #!/usr/bin/env bash
 # doctor.sh — Self-audit plans/ structure against protocol rules.
-# Usage: doctor.sh
+# Usage: doctor.sh [--ascii] [-q|--quiet]
 # Exit 0 = healthy, 1 = issues found.
 # Portable: no process substitution. Skips plans/_archive/ for plan-structure checks.
 
 set -euo pipefail
 
-ISSUES=0
-warn() { echo "⚠  $1"; ISSUES=$((ISSUES + 1)); }
-ok()   { echo "✓  $1"; }
+ASCII=0
+QUIET=0
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) sed -n '2,6p' "$0"; exit 0 ;;
+    --ascii) ASCII=1 ;;
+    -q|--quiet) QUIET=1 ;;
+  esac
+done
 
-echo "=== Agent Protocol doctor ==="
-echo ""
+ISSUES=0
+OKC=0
+QLOG=""
+if [[ "$QUIET" -eq 1 ]]; then
+  QLOG=$(mktemp)
+fi
+if [[ "$ASCII" -eq 1 ]]; then
+  warn() { echo "[WARN] $1"; ISSUES=$((ISSUES + 1)); }
+  ok()   { echo "[OK]   $1"; }
+else
+  warn() { echo "⚠  $1"; ISSUES=$((ISSUES + 1)); }
+  ok()   { echo "✓  $1"; }
+fi
+if [[ "$QUIET" -eq 1 ]]; then
+  warn() { echo "[FAIL] $1" >> "$QLOG"; ISSUES=$((ISSUES + 1)); }
+  ok()   { OKC=$((OKC + 1)); }
+fi
+
+[[ "$QUIET" -eq 0 ]] && echo "=== Agent Protocol doctor ==="
+[[ "$QUIET" -eq 0 ]] && echo ""
 
 for f in context.md SESSION_LOG.md ARCH.md TECH_STACK.md DECISIONS.md PATTERNS.md; do
   if [[ -f "plans/$f" ]]; then
@@ -21,12 +45,16 @@ for f in context.md SESSION_LOG.md ARCH.md TECH_STACK.md DECISIONS.md PATTERNS.m
   fi
 done
 
-echo ""
+[[ "$QUIET" -eq 0 ]] && echo ""
 
 if [[ ! -d plans ]]; then
   warn "no plans/ directory"
-  echo ""
-  echo "Issues: $ISSUES"
+  [[ "$QUIET" -eq 0 ]] && echo ""
+  [[ "$QUIET" -eq 0 ]] && echo "Issues: $ISSUES"
+  if [[ "$QUIET" -eq 1 ]]; then
+    cat "$QLOG" 2>/dev/null || true
+    rm -f "$QLOG"
+  fi
   exit 1
 fi
 
@@ -103,7 +131,7 @@ while IFS= read -r dir; do
 done < "$tmp"
 rm -f "$tmp"
 
-echo ""
+[[ "$QUIET" -eq 0 ]] && echo ""
 if [[ -f AGENTS.md ]]; then
   ok "AGENTS.md present (canonical)"
 else
@@ -124,7 +152,7 @@ if [[ -f plans/context.md ]]; then
   while IFS= read -r entry; do
     [[ -z "$entry" || "$entry" == "none" || "$entry" == "TBD" ]] && continue
     short="${entry#plans/}"
-    if [[ ! -d "plans/${short}" && ! -d "plans/_archive/${short}" ]]; then
+    if [[ ! -d "plans/${short}" && ! -d "plans/_archive/${short}" && ! -d "plans/_archive/$(basename "${short}")" ]]; then
       warn "Active Plans mentions '${entry}' but no such plan folder"
     fi
   done < "$tmp_ap"
@@ -149,7 +177,32 @@ if [[ -f plans/context.md ]]; then
   fi
 fi
 
-echo ""
+# OPT-5: warn on closed (review.md present) plans with no commit yet (best-effort, git repos only)
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  tmp3=$(mktemp)
+  find plans -name review.md -not -path '*/_archive*' 2>/dev/null > "$tmp3" || true
+  while IFS= read -r rf; do
+    [[ -z "$rf" ]] && continue
+    dir=$(dirname "$rf")
+    git check-ignore -q "$rf" 2>/dev/null && continue
+    if [[ -z "$(git log --oneline -1 -- "$rf" 2>/dev/null)" ]]; then
+      rel="${dir#plans/}"
+      warn "review.md for '${rel}' has no commit yet (commit after every closed plan)"
+    fi
+  done < "$tmp3"
+  rm -f "$tmp3"
+fi
+
+[[ "$QUIET" -eq 0 ]] && echo ""
+if [[ "$QUIET" -eq 1 ]]; then
+  if [[ "$ISSUES" -eq 0 ]]; then
+    echo "[OK] $OKC checks passed"
+  else
+    cat "$QLOG"
+  fi
+  rm -f "$QLOG"
+  if [[ "$ISSUES" -eq 0 ]]; then exit 0; else exit 1; fi
+fi
 if [[ "$ISSUES" -eq 0 ]]; then
   echo "All checks passed."
   exit 0

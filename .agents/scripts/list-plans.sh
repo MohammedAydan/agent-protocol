@@ -4,6 +4,12 @@
 # Skips plans/_archive/ by default.
 
 set -euo pipefail
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,5p' "$0"
+  exit 0
+fi
+
 [[ -d plans ]] || { echo "No plans/"; exit 0; }
 
 INCLUDE_ARCHIVE=0

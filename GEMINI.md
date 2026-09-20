@@ -1,6 +1,6 @@
 # GEMINI.md — Antigravity / Gemini CLI adapter
 
-> Thin adapter. **Canonical rules: `AGENTS.md` (v1.0.0).** Read it first.
+> Thin adapter. **Canonical rules: `AGENTS.md` (v1.1.0).** Read it first.
 
 You ship working verified code under AGENTS.md. Planning is a means. Token waste fails.
 

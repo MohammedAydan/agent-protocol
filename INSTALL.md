@@ -1,4 +1,4 @@
-# Install & Update — Agent Protocol 1.0.0
+# Install & Update — Agent Protocol 1.2.1
 
 **Repo:** https://github.com/MohammedAydan/agent-protocol
 
@@ -38,6 +38,7 @@ irm https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-
 ## macOS / Linux / Git Bash
 
 ```bash
+# macOS / Linux / Git Bash (on Windows use curl.exe; see docs/WINDOWS.md):
 curl -fsSL https://raw.githubusercontent.com/MohammedAydan/agent-protocol/main/install-global.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -46,6 +47,8 @@ agent-protocol init --here --adapters none
 agent-protocol update    # يحدث ملفات البروتوكول في المشروع (plans/ تفضل)
 agent-protocol upgrade   # يحدث الحزمة العامة من GitHub
 ```
+
+دليل Windows الكامل: [docs/WINDOWS.md](docs/WINDOWS.md)
 
 ---
 

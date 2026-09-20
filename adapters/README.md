@@ -1,6 +1,6 @@
 # Adapter & Compatibility Matrix
 
-**Canonical rules: `AGENTS.md` (repo root, v1.0.0). Every adapter below is a thin pointer — never duplicate rules.
+**Canonical rules: `AGENTS.md` (repo root, v1.1.0). Every adapter below is a thin pointer — never duplicate rules.
 
 | Harness | Mechanism | Adapter path |
 |---|---|---|

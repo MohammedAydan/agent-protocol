@@ -26,6 +26,9 @@ $ErrorActionPreference = "Stop"
 if ($env:AP_FORCE -eq "1") { $Force = $true }
 if ($env:AP_NONINTERACTIVE -eq "1") { $NonInteractive = $true }
 if (-not $Adapters -and $env:AP_ADAPTERS) { $Adapters = $env:AP_ADAPTERS }
+if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
+  Write-Host "WARN: Git Bash not found. Commands like doctor/status/test require it." -ForegroundColor Yellow
+}
 
 $Target = (Get-Location).Path
 if (-not $Name) { $Name = Split-Path $Target -Leaf }
@@ -160,7 +163,7 @@ try {
   Copy-Proto "adapters"
   if (Want "claude") { Copy-Proto "CLAUDE.md" }
   if (Want "gemini") { Copy-Proto "GEMINI.md" }
-  "1.0.0" | Set-Content -Encoding ascii (Join-Path $Target ".agents\PROTOCOL_VERSION")
+  "1.2.1" | Set-Content -Encoding ascii (Join-Path $Target ".agents\PROTOCOL_VERSION")
 
   $plans = Join-Path $Target "plans"
   if (-not (Test-Path (Join-Path $plans "context.md"))) {

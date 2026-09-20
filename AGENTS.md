@@ -2,7 +2,7 @@
 
 > Canonical source of truth (Linux Foundation Agentic AI Foundation). Adapters stay thin and point here.
 
-Version: **1.0.0**
+Version: **1.2.1**
 
 ---
 
@@ -42,16 +42,38 @@ bash .agents/scripts/resume.sh
 bash -lc "bash .agents/scripts/task.sh plans/my-plan 1 start"
 ```
 Prefer **numeric** task specs (avoids quoting). Run scripts **sequentially** per plan folder (no parallel `task.sh` on the same folder). Do not paste bash `||` / `&&` / heredocs into PowerShell.
+Windows-specific recipes: `docs/WINDOWS.md`.
 
 ---
 
 ## Adaptive planning (T0–T3)
 
-**Lowest viable tier.**
+**Lowest viable tier. Default: a task with ≤3 files, one decision, and ≤30 min
+MUST use T0.5 (single inline checklist, no directory, no multi-script chain,
+no review ceremony, no blocking multi-file checks).**
+
+| Tier  | Typical setup cost | Use when |
+|-------|--------------------|----------|
+| T0    | ~0 tokens          | Typo, one-liner |
+| T0.5  | ~50 tokens         | ≤3 files, one decision, ≤30 min |
+| T1    | ~200 tokens        | ≤3 files, clear acceptance, ≤1 h |
+| T2    | ~500 tokens        | Multi-file, new module |
+| T3    | ~1500 tokens       | Multi-milestone |
 
 | Tier | When | Create |
 |------|------|--------|
 | **T0** | typo / 1-liner / pure config | nothing — implement |
+| **T0.5** | ≤3 files, one decision, ≤30 min | `plans/_quick/<name>.md` (single file, no folder, no review) |
+
+**T0.5 code-first rule. Code correctness and edge-case fidelity (RFC 4180
+parsing, whitespace/empty-line handling, exit codes) take absolute
+precedence over documentation prose. Keep T0.5 records minimal and
+unpadded. Toggle T0.5 boxes only via `task.sh --quick <name>` (never
+hand-edit). Primary implementation checklist for parsing work: quoted
+fields, embedded commas/newlines, empty cells, short-row padding,
+long-row `field_N` policy (documented), all-empty/blank-line rows,
+trailing-newline input (no phantom records), malformed input → nonzero
+exit + `Error:` on stderr.**
 | **T1** | ≤~3 files, clear acceptance | `plans/<name>/plan.md` only |
 | **T2** | multi-file / new module | `plan.md` + `tasks.md` + `context.md` |
 | **T3** | multi-milestone / migration | `OVERVIEW.md` + sub-folders (each T1/T2) |
@@ -84,10 +106,17 @@ Empty `plan.md` / empty Tasks while writing production code = protocol violation
 - Order: `task … start` → code → verify → `task … done`.
 - Stay in scope. Related work → new `[ ]` item.
 
+#### T1 checkbox semantics
+- `task.sh <dir> <n>` on T1 counts `## Tasks` section by default.
+- `task.sh --acceptance <dir> <n>` counts `## Acceptance`.
+- `task.sh --section tasks|acceptance` for explicit selection.
+- `--file plan.md` still counts ALL checkboxes (v1.0.0 behavior).
+
 ### 3) Verify (required before `[x]`)
 
 - Lint/format pass when the project has them.
 - Tests/checks implied by acceptance against **real** output.
+- `verify-checklist.sh --strict plans/<name>` is the CI gate (exits non-zero if unresolved tasks remain).
 - UI: open in browser or describe visual check when harness allows.
 - JS/TS: syntax check (`node --check` / project test runner) when applicable.
 
@@ -95,9 +124,11 @@ Empty `plan.md` / empty Tasks while writing production code = protocol violation
 
 When all tasks are `[x]` or `[-]`:
 
-1. `close-plan.sh plans/<name>` (creates `review.md`)
+1. `close-plan.sh plans/<name>` (creates `review.md`; scans `tasks.md`, `plan.md`, and `OVERVIEW.md` for open tasks)
 2. Append `SESSION_LOG.md` (what shipped, decisions, resume note)
 3. Optional: `archive.sh plans/<name>`
+4. Fill `review.md` `## Built` (T2/T3 required — close-plan refuses an empty one; T0.5/T1: one line in plan.md suffices)
+5. Commit after every closed plan: `git add -A && git commit -m "<type>(<scope>): <desc>"`
 
 Ending a T1+ feature with open tasks or no SESSION_LOG entry = incomplete.
 

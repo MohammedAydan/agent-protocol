@@ -54,7 +54,10 @@ grep -q '\[-\]' plans/valid-name/plan.md && ok "cancel marker" || bad "cancel ma
 
 # --- 5 close refuses open ---
 if run close-plan.sh plans/valid-name 2>/dev/null; then bad "close open tasks"; else ok "close refuses open"; fi
-for i in 1 2 3 4 5 6 7 8; do run task.sh plans/valid-name $i done >/dev/null 2>&1 || run task.sh plans/valid-name $i cancel x >/dev/null 2>&1 || true; done
+for i in 1 2 3 4 5 6 7 8; do
+  run task.sh plans/valid-name $i done >/dev/null 2>&1 || run task.sh plans/valid-name $i cancel x >/dev/null 2>&1 || true
+  run task.sh --acceptance plans/valid-name $i done >/dev/null 2>&1 || run task.sh --acceptance plans/valid-name $i cancel x >/dev/null 2>&1 || true
+done
 run close-plan.sh --force plans/valid-name >/dev/null
 [[ -f plans/valid-name/review.md ]] && ok "review created" || bad "review created"
 
@@ -77,10 +80,14 @@ ok "acceptance flags ran"
 ap=$(grep 'Active Plans:' plans/context.md)
 echo "$ap" | grep -q epic-x && ok "active lists epic" || bad "active lists epic"
 # close+archive 01-a only
-for i in 1 2 3 4 5 6; do run task.sh plans/epic-x/01-a $i cancel x >/dev/null 2>&1 || true; done
+for i in 1 2 3 4 5 6; do
+  run task.sh plans/epic-x/01-a $i cancel x >/dev/null 2>&1 || true
+  run task.sh --acceptance plans/epic-x/01-a $i cancel x >/dev/null 2>&1 || true
+done
 run close-plan.sh --force plans/epic-x/01-a >/dev/null
 printf '%s\n' '# R' '## Built' '- a' > plans/epic-x/01-a/review.md
 run archive.sh plans/epic-x/01-a >/dev/null
+[[ -d plans/_archive/epic-x/01-a ]] && ok "nested archive preserves parent" || bad "nested archive preserves parent"
 ap=$(grep 'Active Plans:' plans/context.md)
 echo "$ap" | grep -q '01-a' && bad "01-a still active: $ap" || ok "nested remove from active"
 echo "$ap" | grep -q 'epic-x' && ok "parent still active" || bad "parent lost"
@@ -90,6 +97,9 @@ out=$(run status.sh 2>&1 || true)
 echo "$out" | grep -q '_archive/valid-name' && bad "status shows archive" || ok "status hides archive"
 run doctor.sh >/dev/null 2>&1 || true
 ok "doctor runs"
+mkdir -p plans/_archive/legacy-child
+printf '%s\n' '# Review' '## Built' '- legacy' > plans/_archive/legacy-child/review.md
+run doctor.sh >/dev/null 2>&1 && ok "legacy archive readable by doctor" || bad "legacy archive readable by doctor"
 
 # --- 10 session-log / update-doc ---
 run session-log.sh "s" "d" "dec" "files" "resume" >/dev/null
@@ -108,6 +118,7 @@ run promote.sh plans/prom >/dev/null
 # --- 12 close without --force after all done ---
 for i in 1 2 3 4 5 6 7 8; do run task.sh plans/prom $i cancel x >/dev/null 2>&1 || true; done
 for i in 1 2 3 4; do run task.sh --file plan.md plans/prom $i cancel x >/dev/null 2>&1 || true; done
+sed -i.bak "s|^Current Status:.*|Current Status: Active: prom|" plans/context.md; rm -f plans/context.md.bak
 run close-plan.sh plans/prom >/dev/null && ok "close when clear" || bad "close when clear"
 
 # --- 13 double archive refuse ---
@@ -146,6 +157,58 @@ run task.sh plans/p-a 1 block "need API key's \"quote\"" >/dev/null 2>&1 && ok "
 # --- 20 archive --all dry path (may refuse open) ---
 run archive.sh --all >/dev/null 2>&1 || true
 ok "archive --all runs"
+
+# --- 21 close-plan and archive scan OVERVIEW.md (D12) ---
+run new-plan.sh T3 epic-d12 >/dev/null
+if run close-plan.sh plans/epic-d12 >/dev/null 2>&1; then
+  bad "close-plan allowed open OVERVIEW.md"
+else
+  ok "close-plan refuses open OVERVIEW.md"
+fi
+if run archive.sh plans/epic-d12 >/dev/null 2>&1; then
+  bad "archive allowed open OVERVIEW.md"
+else
+  ok "archive refuses open OVERVIEW.md"
+fi
+sed -i.bak 's/- \[ \]/- [x]/' plans/epic-d12/OVERVIEW.md
+sed -i.bak "s|^Current Status:.*|Current Status: Active: epic-d12|" plans/context.md; rm -f plans/context.md.bak
+run close-plan.sh plans/epic-d12 >/dev/null && ok "close-plan accepts resolved OVERVIEW.md" || bad "close-plan accepts resolved OVERVIEW.md"
+run archive.sh plans/epic-d12 >/dev/null && ok "archive accepts resolved OVERVIEW.md" || bad "archive accepts resolved OVERVIEW.md"
+
+# --- 22 promote regression guard (D13) ---
+run new-plan.sh T1 promo-d13 >/dev/null
+printf '%s\n' '- [ ] task three' >> plans/promo-d13/plan.md
+run promote.sh plans/promo-d13 >/dev/null
+if [[ -f plans/promo-d13/tasks.md && -f plans/promo-d13/context.md ]]; then
+  tasks_count=$(grep -cE '^- \[ \]' plans/promo-d13/tasks.md || true)
+  if [[ "$tasks_count" -ge 3 ]]; then
+    ok "promote preserves 3 tasks"
+  else
+    bad "promote lost tasks: count=$tasks_count"
+  fi
+  if grep -q "T1: task.sh defaults" plans/promo-d13/plan.md; then
+    ok "D7 comment preserved in plan.md"
+  else
+    bad "D7 comment lost from plan.md"
+  fi
+  if grep -q "T1: task.sh defaults" plans/promo-d13/tasks.md; then
+    bad "D7 comment leaked into tasks.md"
+  else
+    ok "D7 comment absent from tasks.md"
+  fi
+else
+  bad "promote failed to create tasks/context"
+fi
+
+# --- OPT-4: --batch preserves one-[~] invariant (stops on conflict) ---
+run new-plan.sh T1 batch-s >/dev/null
+if printf '1 start\n2 start\n' | run task.sh --batch plans/batch-s 2>/dev/null; then
+  bad "batch double-start should fail"
+else
+  ok "batch double-start refused"
+fi
+tilde_count=$(grep -cE '^- \[~\] ' plans/batch-s/plan.md || true)
+if [[ "$tilde_count" -eq 1 ]]; then ok "batch stopped after conflict (one [~])"; else bad "batch state after conflict: [~]=$tilde_count"; fi
 
 echo ""
 echo "STRESS Results: $pass passed, $fail failed"

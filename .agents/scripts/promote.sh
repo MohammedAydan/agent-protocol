@@ -5,6 +5,12 @@
 # Usage: promote.sh <plan-folder>
 
 set -euo pipefail
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,6p' "$0"
+  exit 0
+fi
+
 DIR="${1:-}"
 [[ -z "$DIR" || ! -f "${DIR}/plan.md" ]] && { echo "Usage: promote.sh <plan-folder with plan.md>"; exit 1; }
 [[ -f "${DIR}/tasks.md" ]] && { echo "Already T2 (tasks.md exists)."; exit 0; }

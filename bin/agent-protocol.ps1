@@ -10,7 +10,13 @@ $ErrorActionPreference = "Stop"
 $Owner = if ($env:AGENT_PROTOCOL_OWNER) { $env:AGENT_PROTOCOL_OWNER } else { "MohammedAydan" }
 $Repo  = if ($env:AGENT_PROTOCOL_REPO)  { $env:AGENT_PROTOCOL_REPO }  else { "agent-protocol" }
 $Ref   = if ($env:AGENT_PROTOCOL_REF)   { $env:AGENT_PROTOCOL_REF }   else { "main" }
-$Pkg   = if ($env:AGENT_PROTOCOL_HOME)  { $env:AGENT_PROTOCOL_HOME }  else { Join-Path $env:LOCALAPPDATA "agent-protocol" }
+$Pkg   = if ($env:AGENT_PROTOCOL_HOME)  {
+  $env:AGENT_PROTOCOL_HOME
+} elseif ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "..\AGENTS.md")) -and (Test-Path (Join-Path $PSScriptRoot "..\.agents\scripts"))) {
+  (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+} else {
+  Join-Path $env:LOCALAPPDATA "agent-protocol"
+}
 
 function Get-Bash {
   foreach ($c in @(
@@ -28,7 +34,9 @@ function Write-Utf8File([string]$Path, [string[]]$Lines) {
   if ($dir -and -not (Test-Path $dir)) {
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
   }
-  $Lines | Set-Content -Path $Path -Encoding utf8
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  $content = ($Lines -join "`n") + "`n"
+  [System.IO.File]::WriteAllText($Path, $content, $utf8NoBom)
 }
 
 function Show-Help {
@@ -37,6 +45,9 @@ function Show-Help {
   Write-Host "  init [--adapters none|all|claude,cursor] [--force]"
   Write-Host "  update [--force]"
   Write-Host "  upgrade"
+  if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
+    Write-Host "WARN: Git Bash not found. Commands like doctor/status/test require it." -ForegroundColor Yellow
+  }
   Write-Host "With Git Bash: doctor status resume test stress new task ..."
 }
 
@@ -57,6 +68,28 @@ function Update-Project {
     Write-Host "ERROR: package path equals project path" -ForegroundColor Red
     exit 1
   }
+
+  $bash = Get-Bash
+  if ($bash) {
+    $script = (Join-Path $Pkg ".agents\scripts\update-project.sh") -replace '\\', '/'
+    if (Test-Path $script) {
+      $pkgBash = $pkgFull -replace '\\', '/'
+      $cmdArgs = @($script, "--from", $pkgBash, "--here")
+      if ($Force) { $cmdArgs += "--force" }
+      if ($Rest) {
+        foreach ($r in $Rest) {
+          if ($r -ne "update" -and $r -ne "--force") {
+            $cmdArgs += $r
+          }
+        }
+      }
+      & $bash @cmdArgs
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      return
+    }
+  }
+
+  Write-Host "WARN: Git Bash not found; falling back to PowerShell update." -ForegroundColor Yellow
   Write-Host "=== Update protocol in project ===" -ForegroundColor Cyan
   Write-Host "  package: $Pkg"
   Write-Host "  target : $target"
@@ -80,7 +113,7 @@ function Update-Project {
       Write-Host "  + .agents/$sub/"
     }
   }
-  Write-Utf8File (Join-Path $target ".agents\PROTOCOL_VERSION") @("1.0.0")
+  Write-Utf8File (Join-Path $target ".agents\PROTOCOL_VERSION") @("1.2.1")
 
   if ($Force) {
     $ad = Join-Path $Pkg "adapters"
@@ -121,6 +154,26 @@ function Install-Init {
     exit 1
   }
 
+  $bash = Get-Bash
+  if ($bash) {
+    $script = (Join-Path $Pkg ".agents\scripts\init.sh") -replace '\\', '/'
+    if (Test-Path $script) {
+      $targetBash = (Resolve-Path $target).Path -replace '\\', '/'
+      $cmdArgs = @($script, $targetBash)
+      if ($force) { $cmdArgs += "--force" }
+      if ($Rest) {
+        foreach ($r in $Rest) {
+          if ($r -ne "init" -and $r -ne "--force") {
+            $cmdArgs += $r
+          }
+        }
+      }
+      & $bash @cmdArgs
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      return
+    }
+  }
+
   Write-Host "=== init from global package ===" -ForegroundColor Cyan
   Copy-Item -Force (Join-Path $Pkg "AGENTS.md") (Join-Path $target "AGENTS.md")
   Write-Host "  + AGENTS.md"
@@ -137,6 +190,16 @@ function Install-Init {
     New-Item -ItemType Directory -Force -Path $ds | Out-Null
     Copy-Item -Recurse -Force (Join-Path $Pkg ".agents\scripts\*") $ds
     Write-Host "  + .agents/scripts/ (refreshed)"
+  }
+
+  $ad = Join-Path $Pkg "adapters"
+  if (Test-Path $ad) {
+    $d = Join-Path $target "adapters"
+    if (-not (Test-Path $d)) {
+      New-Item -ItemType Directory -Force -Path $d | Out-Null
+      Copy-Item -Recurse -Force (Join-Path $ad "*") $d
+      Write-Host "  + adapters/"
+    }
   }
 
   if ($adapters -match "all|claude") {
@@ -161,17 +224,50 @@ function Install-Init {
       "Critical Constraints: TBD"
       "Active Plans: none"
       "Known Issues: none"
+      ""
+    )
+    Write-Utf8File (Join-Path $plans "ARCH.md") @(
+      "# Architecture"
+      ""
+      "## High-level"
+      "TBD"
+      ""
+      "## Key modules"
+      "TBD"
+      ""
+    )
+    Write-Utf8File (Join-Path $plans "TECH_STACK.md") @(
+      "# Tech Stack"
+      ""
+      "| Layer | Choice | Version | Reason |"
+      "|-------|--------|---------|--------|"
+      "| Language | TBD |  |  |"
+      "| Framework | TBD |  |  |"
+      "| DB | TBD |  |  |"
+      "| Testing | TBD |  |  |"
+      ""
+    )
+    Write-Utf8File (Join-Path $plans "DECISIONS.md") @(
+      "# Architecture Decision Records"
+      ""
+      "<!-- ADR-NNN: Date / Status / Context / Decision / Alternatives / Consequences -->"
+      ""
+    )
+    Write-Utf8File (Join-Path $plans "PATTERNS.md") @(
+      "# Patterns"
+      ""
+      "<!-- Problem / Solution / Example / Gotchas -->"
+      ""
     )
     Write-Utf8File (Join-Path $plans "SESSION_LOG.md") @(
       "# Session Log"
       ""
-      "## $ts UTC - Bootstrap"
-      "- Done: init via agent-protocol (Windows)"
-      "- Resume: classify first work T0-T3"
+      ("## " + (Get-Date -Format 'yyyy-MM-dd HH:mm UTC') + " - Bootstrap")
+      "- Done: Created initial plans/ brain"
+      "- Decisions: none yet"
+      "- Files: context ARCH TECH_STACK DECISIONS PATTERNS SESSION_LOG"
+      "- Resume: classify first work (T0-T3) then start"
     )
-    foreach ($f in @("ARCH.md", "TECH_STACK.md", "DECISIONS.md", "PATTERNS.md")) {
-      Write-Utf8File (Join-Path $plans $f) @("# $f", "")
-    }
     Write-Host "  + plans/"
   }
 
@@ -191,7 +287,7 @@ switch ($Command.ToLower()) {
   "-h" { Show-Help }
   "--help" { Show-Help }
   "version" {
-    Write-Host "CLI: 1.0.0 (Windows PowerShell)"
+    Write-Host "CLI: 1.2.1 (Windows PowerShell)"
     Write-Host "PKG: $Pkg"
     $vf = Join-Path $Pkg "VERSION"
     if (Test-Path $vf) {

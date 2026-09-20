@@ -1,0 +1,11 @@
+# Agent Protocol — line-ending and encoding policy (D9)
+# Ensures .sh files always check out with LF (even on Windows),
+# so bash execution and lint-encoding.sh gates stay green.
+
+* text=auto eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+*.mdc text eol=lf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
