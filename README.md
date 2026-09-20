@@ -1,4 +1,4 @@
-# Agent Protocol 1.2.0
+# Agent Protocol 1.2.1
 
 **First production release.** Universal software-engineering protocol for AI coding agents.
 
@@ -94,6 +94,7 @@ All plain bash. No external dependencies.
 
 ## Version
 
+**1.2.1** — governance release (`task.sh --quick` T0.5 parity, code-first guardrails, deterministic gates; `v1.2.0` superseded as defective).
 **1.2.0** — efficiency release (T0.5 fast path, slim T1, quiet scripts, batch tasks, close enforcement, tier costs, overhead audit).
 **1.1.0** — hardening release (Windows portability, task section scoping, strict verification, dual update unification, archive hierarchy).
 **1.0.0** — first production release.  

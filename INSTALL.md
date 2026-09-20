@@ -1,4 +1,4 @@
-# Install & Update — Agent Protocol 1.2.0
+# Install & Update — Agent Protocol 1.2.1
 
 **Repo:** https://github.com/MohammedAydan/agent-protocol
 

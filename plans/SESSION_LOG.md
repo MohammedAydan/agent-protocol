@@ -46,3 +46,8 @@
 ## 2026-09-19 15:21 UTC â€” Closed fix-D13-promote-regression
 - Done: D13: guard T1->T2 regression (39 passed -> 42 passed in stress)
 
+
+## 2026-09-20 — Shipped v1.2.1 (governance release)
+- Done: task.sh --quick T0.5 parity + EOL matchers (smoke 84->95); AGENTS.md code-first + edge checklist; ADR-011 metric separation; v1.2.0 superseded as defective; 8/8 gateway PASS; tag v1.2.1.
+- Resume: owner disposition of defective v1.2.0 tag; prompt SESSION_LOG/--quick-use evidence harder (v1.2.1 FW arm filed no log entry).
+

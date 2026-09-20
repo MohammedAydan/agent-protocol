@@ -113,7 +113,7 @@ function Update-Project {
       Write-Host "  + .agents/$sub/"
     }
   }
-  Write-Utf8File (Join-Path $target ".agents\PROTOCOL_VERSION") @("1.2.0")
+  Write-Utf8File (Join-Path $target ".agents\PROTOCOL_VERSION") @("1.2.1")
 
   if ($Force) {
     $ad = Join-Path $Pkg "adapters"
@@ -287,7 +287,7 @@ switch ($Command.ToLower()) {
   "-h" { Show-Help }
   "--help" { Show-Help }
   "version" {
-    Write-Host "CLI: 1.2.0 (Windows PowerShell)"
+    Write-Host "CLI: 1.2.1 (Windows PowerShell)"
     Write-Host "PKG: $Pkg"
     $vf = Join-Path $Pkg "VERSION"
     if (Test-Path $vf) {

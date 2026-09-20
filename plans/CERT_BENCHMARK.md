@@ -104,3 +104,22 @@ Full evidence: `benchmarks/v1.2.0/REPORT.md` (A/B re-run) and
 - Deterministic script ceremony: T0.5 ~0.2–1 s, T1 ~1.5 s (see REPORT.md).
 - Code: `task.sh --batch` in-memory rewrite + T0.5 MUST-default; suites
   84/44 green, lint-encoding exit 0. No tag created by this audit.
+
+## v1.2.1 Certification Seal (2026-09-20, branch `perf/v1.2.1-governance`)
+
+Full evidence: `benchmarks/v1.2.1/REPORT.md` (fresh A/B + blind review).
+
+- Code: `task.sh --quick` T0.5 parity (single + in-memory batch,
+  EOL-tolerant matchers, sequential parity); AGENTS.md code-first rule +
+  parsing edge checklist; engineering-standards guardrail. Smoke
+  84 → 95, stress 44, `lint-encoding.sh` exit 0.
+- Deterministic A/B (CSV→JSON, spec sha EC4EA6B5…): ceremony
+  new-plan 327 ms + quick-batch 151 ms + measure 620 ms = **~1.1 s**
+  (gate ≤2.0 s); FW arm T0.5 (193 B single file, −91.8% vs v1.1.0
+  2347 B); blind **95 vs 93** (FW wins, no regression); AC1–AC8 +
+  empty-row + trailing-newline + ragged 100% both arms.
+- Gateway: **8/8 PASS** (LLM wall-clock recorded as telemetry only per
+  ADR-011: last-activity +269 s FW / +114 s control).
+- `v1.2.0` documented DEFECTIVE and SUPERSEDED (ADR-011); tag left in
+  place (no published-tag deletion). Tag: `v1.2.1` (annotated) on the
+  release commit.

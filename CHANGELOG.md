@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.1 — 2026-09-20
+
+### Governance Release (deterministic gates; `v1.2.0` superseded as defective)
+
+- **`task.sh --quick` (T0.5 tooling parity):** `task.sh --quick <name>` and
+  native `plans/_quick/<name>.md` paths toggle T0.5 boxes via CLI
+  (single + in-memory `--batch`), zero hand-edits; checkbox matchers
+  accept bare `- [X]` at EOL in every path with sequential parity
+  (11 new smoke tests: 84 → 95).
+- **Code-first calibration:** AGENTS.md T0.5 rule + engineering-standards
+  prioritize RFC 4180/edge fidelity (blank-line policy, trailing
+  newlines, exit codes) over prose; explicit parsing edge checklist.
+- **Deterministic gates (ADR-011):** release gates admit only script
+  ceremony time, artifact bytes, LOC, suites, acceptance+edges, blind
+  scores, back-compat. LLM wall-clock is disclosed telemetry, never
+  gating. `v1.2.0` documented defective/superseded (tag left in place;
+  no published-tag deletion).
+- Proof: `benchmarks/v1.2.1/REPORT.md` — ceremony ~1.1 s (≤2.0 s),
+  artifact 193 B (−91.8%), LOC −18.7%, AC/edges 100% both arms, blind
+  95 vs 93 (FW wins, no regression), suites 95/44 + lint 0.
+
 ## Audit — 2026-09-20 (BLOCKED, untagged)
 
 Forensic audit of the v1.2.0 release. Verdict: **BLOCKED (6/9 PASS)** —

@@ -172,3 +172,46 @@
   this ADR. (Superseded: sign-off never evidenced; tag stands as
   defective pending owner disposition — DO NOT build a new tag on top
   until the audit gateway passes.)
+
+## ADR-011 — Metric Realism, T0.5 Tooling Parity, and v1.2.0 Disposition
+
+- **Date:** 2026-09-20
+- **Status:** Accepted (v1.2.1 release governor)
+- **Context:** The v1.2.0 audit proved framework script ceremony costs
+  ~1–2 s while LLM authoring time varies 46–1743 s on the identical spec
+  (σ ≈ 100x the signal). Gating a Bash framework release on
+  non-deterministic model latency is a category error: even a
+  zero-framework control arm breached 180 s (197 s). Separately, `task.sh`
+  could not toggle `plans/_quick/*.md` boxes (fresh T0.5 `- [ ]` lines
+  carry no trailing space and folder resolution rejected files), forcing
+  hand-edits; and Trial 1 showed framework prose can distract from
+  edge-case rigor (FW phantom-record defect vs clean control).
+- **Decision:**
+  1. Permanent metric separation. STRICT release gates admit ONLY
+     deterministic framework metrics: script ceremony time, artifact
+     payload bytes, LOC overhead, test suites, acceptance + edge
+     correctness, blind quality scores, back-compat. LLM wall-clock,
+     API jitter, and CPU-contention observations are TELEMETRY —
+     recorded, disclosed, never gating.
+  2. T0.5 tooling parity. `task.sh` accepts `--quick <name>` and native
+     `plans/_quick/<name>.md` paths (single + `--batch`, in-memory,
+     zero hand-edits); checkbox matchers accept bare `- [X]` at EOL in
+     every resolution path (batch index, awk scope scans, sed marker,
+     tilde count) with sequential parity.
+  3. Code-first calibration. AGENTS.md T0.5 rule and engineering-standards
+     state correctness/edge fidelity (RFC 4180, blank-line policy,
+     trailing newlines, exit codes) outrank planning prose; parsing work
+     ships against an explicit edge checklist first.
+  4. v1.2.0 disposition. `v1.2.0` is documented DEFECTIVE and SUPERSEDED
+     (metric category error + ADR-010 self-waiver, both preserved on
+     record). It is left in place (no published-tag deletion without
+     owner order); `v1.2.1` ships on the 8-criterion deterministic
+     gateway with clean justification. No ghost tags: every tag maps to
+     an evidenced gate evaluation.
+- **Alternatives considered:** Keep LLM-time gates with wider bounds —
+  rejected: bounds would still measure the model, not the framework, and
+  any bound is waivable under pressure (see ADR-010). Delete `v1.2.0`
+  tag — rejected: rewrites shared history; owner-only decision.
+- **Consequences:** Release gates are engineer-passable by construction;
+  telemetry sections in benchmark reports are mandatory disclosure;
+  `--quick` coverage (≥11 smoke tests) guards the tooling parity.
