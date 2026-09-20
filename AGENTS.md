@@ -2,7 +2,7 @@
 
 > Canonical source of truth (Linux Foundation Agentic AI Foundation). Adapters stay thin and point here.
 
-Version: **1.2.0**
+Version: **1.2.1**
 
 ---
 
@@ -64,6 +64,16 @@ no review ceremony, no blocking multi-file checks).**
 |------|------|--------|
 | **T0** | typo / 1-liner / pure config | nothing — implement |
 | **T0.5** | ≤3 files, one decision, ≤30 min | `plans/_quick/<name>.md` (single file, no folder, no review) |
+
+**T0.5 code-first rule. Code correctness and edge-case fidelity (RFC 4180
+parsing, whitespace/empty-line handling, exit codes) take absolute
+precedence over documentation prose. Keep T0.5 records minimal and
+unpadded. Toggle T0.5 boxes only via `task.sh --quick <name>` (never
+hand-edit). Primary implementation checklist for parsing work: quoted
+fields, embedded commas/newlines, empty cells, short-row padding,
+long-row `field_N` policy (documented), all-empty/blank-line rows,
+trailing-newline input (no phantom records), malformed input → nonzero
+exit + `Error:` on stderr.**
 | **T1** | ≤~3 files, clear acceptance | `plans/<name>/plan.md` only |
 | **T2** | multi-file / new module | `plan.md` + `tasks.md` + `context.md` |
 | **T3** | multi-milestone / migration | `OVERVIEW.md` + sub-folders (each T1/T2) |

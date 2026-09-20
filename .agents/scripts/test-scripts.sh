@@ -336,6 +336,30 @@ grep -E '^- \[.\] ' plans/batch-b/plan.md > bb.txt
 check "batch equals sequential" diff ba.txt bb.txt
 rm -f ba.txt bb.txt
 
+# v1.2.1: task.sh --quick (native T0.5 single-file support, zero hand-edits)
+bash .agents/scripts/new-plan.sh T0.5 quick-a >/dev/null 2>&1
+bash .agents/scripts/new-plan.sh T0.5 quick-b >/dev/null 2>&1
+check_exit0 "quick start exits 0" bash .agents/scripts/task.sh --quick quick-a 1 start
+check "quick start toggles" bash -c 'grep -q "^- \[~\]" plans/_quick/quick-a.md'
+check_exit0 "quick done exits 0" bash .agents/scripts/task.sh --quick quick-a 1 done
+check "quick done toggles" bash -c 'grep -q "^- \[x\]" plans/_quick/quick-a.md'
+check_exit0 "quick native path" bash .agents/scripts/task.sh plans/_quick/quick-a.md 2 start
+check "quick native toggles Verify box" bash -c '[[ $(grep -c "^- \[~\]" plans/_quick/quick-a.md) -eq 1 ]]'
+bash .agents/scripts/task.sh --quick quick-a 2 done >/dev/null 2>&1
+check_exit0 "quick batch exits 0" bash -c "printf '1 start\n1 done\n2 start\n2 done\n' | bash .agents/scripts/task.sh --quick quick-b --batch"
+check "quick batch completes both boxes" bash -c '[[ $(grep -c "^- \[x\]" plans/_quick/quick-b.md) -eq 2 ]]'
+bash .agents/scripts/new-plan.sh T0.5 quick-c >/dev/null 2>&1
+bash .agents/scripts/task.sh --quick quick-c 1 start >/dev/null 2>&1
+bash .agents/scripts/task.sh --quick quick-c 1 done >/dev/null 2>&1
+bash .agents/scripts/task.sh --quick quick-c 2 start >/dev/null 2>&1
+bash .agents/scripts/task.sh --quick quick-c 2 done >/dev/null 2>&1
+grep -E '^- \[.\]' plans/_quick/quick-b.md > qb.txt
+grep -E '^- \[.\]' plans/_quick/quick-c.md > qc.txt
+check "quick batch equals sequential" diff qb.txt qc.txt
+rm -f qb.txt qc.txt
+check "quick rejects slashes" bash -c '! bash .agents/scripts/task.sh --quick a/b 1 start >/dev/null 2>&1'
+check "quick missing file errors" bash -c '! bash .agents/scripts/task.sh --quick no-such-quick 1 start >/dev/null 2>&1'
+
 # OPT-5: close-plan enforcement (T2 review gate + Bootstrapped context gate)
 bash .agents/scripts/new-plan.sh T2 strict-t2 >/dev/null 2>&1
 bash .agents/scripts/task.sh plans/strict-t2 1 done >/dev/null 2>&1

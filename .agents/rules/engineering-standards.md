@@ -13,7 +13,7 @@ Referenced by AGENTS.md. Apply to every language.
 [!] blocked: reason   [-] cancelled: reason
 ```
 
-Use `task.sh` — never hand-edit markers.
+Use `task.sh` — never hand-edit markers. T0.5 single files: `task.sh --quick <name>` (or the `plans/_quick/<name>.md` path directly).
 
 ## Feature lifecycle (T1+)
 
@@ -47,6 +47,14 @@ Limits: T0=0 · T1=1 · T2=3 files · ≤10 new plans/ files per session · no e
 Lowest tier · required files exist → plan ends · >80 lines → implement · 3 doc-only turns → implement or ask · prefer code over docs.
 
 ## Code quality
+
+**Code first, ceremony second.** RFC/spec compliance and edge-case handling
+outrank lifecycle record-keeping: never let planning prose distract from
+implementation rigor. Parsing work ships with this checklist green first:
+quoted/embedded-comma/embedded-newline fields, empty cells, short-row pad,
+long-row extras policy, blank/all-empty-line rows (skip vs preserve —
+decide, document, test), trailing-newline input (no phantom records),
+malformed input → nonzero exit + one-line `Error:` on stderr.
 
 - Strict typing; no `any`; no unchecked casts
 - Validate every boundary input

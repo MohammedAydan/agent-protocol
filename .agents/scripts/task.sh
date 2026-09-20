@@ -8,10 +8,14 @@
 #   task.sh --section tasks|acceptance <plan-folder> <n|text> <action> [reason]
 #   task.sh [-q|--quiet] ...           # same output minus WARNING lines
 #   printf '1 start\n1 done\n' | task.sh [--file ...] [--section ...] --batch <plan-folder>
+#   task.sh --quick <name> <n|text> <action> [reason]  # T0.5 single file (no hand-edits)
+#   task.sh plans/_quick/<name>.md <n|text> <action> [reason]  # same, native path
+#   printf '1 start\n1 done\n' | task.sh --quick <name> --batch  # batch on T0.5
 #
 # Rules:
 #   start → max ONE [~] per *file* being edited (and warn if other file has [~])
 #   Sequential calls only per plan folder (avoid parallel sed races)
+#   T0.5 files count ALL checkboxes in file order (## Task then ## Verify)
 # Windows: bash -lc "bash .agents/scripts/task.sh plans/x 1 start"
 
 set -euo pipefail
@@ -21,11 +25,13 @@ FORCE_ACCEPTANCE=0
 SECTION_ARG=""
 QUIET=0
 BATCH=0
+QUICK=""
 while [[ "${1:-}" =~ ^- ]]; do
   case "$1" in
-    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     -q|--quiet) QUIET=1; shift ;;
     --batch) BATCH=1; shift ;;
+    --quick) QUICK="${2:-}"; shift 2 ;;
     --file) FILE_OVERRIDE="$2"; shift 2 ;;
     --acceptance) FORCE_ACCEPTANCE=1; shift ;;
     --section) SECTION_ARG="$2"; shift 2 ;;
@@ -33,14 +39,39 @@ while [[ "${1:-}" =~ ^- ]]; do
   esac
 done
 
+# v1.2.1: resolve --quick <name> to its single-file plan. Native file paths
+# (plans/_quick/<name>.md) are also accepted directly as the target.
+QUICKFILE=0
+if [[ -n "$QUICK" ]]; then
+  case "$QUICK" in
+    *[/\\]*) echo "ERROR: quick name must be a single file stem (no slashes)."; exit 1 ;;
+  esac
+  if [[ "$BATCH" -eq 1 ]]; then
+    set -- "plans/_quick/${QUICK}.md" "$@"
+  else
+    # Rebuild positional args: <file> <spec> <action> [reason...]
+    _qrest=("$@")
+    set -- "plans/_quick/${QUICK}.md" "${_qrest[@]}"
+  fi
+  QUICKFILE=1
+fi
+
 if [[ "$BATCH" -eq 1 ]]; then
   BDIR="${1:-}"
-  [[ -z "$BDIR" ]] && { echo "Usage: task.sh [--file F] [--section S] [--acceptance] [-q] --batch <plan-folder> < stdin(list of '<n> <action> [reason]')"; exit 1; }
+  [[ -z "$BDIR" ]] && { echo "Usage: task.sh [--file F] [--section S] [--acceptance] [-q] --batch <plan-folder> | --quick <name> --batch | <quick-file> --batch < stdin(list of '<n> <action> [reason]')"; exit 1; }
   # OPT-4 REVISION (audit): in-memory batch — resolve target file ONCE,
   # load into array, apply all transitions in-process, single file write,
   # zero sub-process forks per task item (no bash re-invocation, no
   # grep/sed/awk per item). Parity with sequential calls verified by
   # test-scripts.sh "batch equals sequential".
+  # v1.2.1: direct-file targets (plans/_quick/<name>.md via --quick or
+  # native path) skip folder/section resolution; ALL checkboxes count in
+  # file order (## Task then ## Verify).
+  _B_FILE=""
+  _B_TARGET_SECTION=""
+  if [[ -f "$BDIR" ]]; then
+    _B_FILE="$BDIR"
+  else
   _B_RESOLVED_SECTION=""
   if [[ "$FORCE_ACCEPTANCE" -eq 1 ]]; then
     _B_RESOLVED_SECTION="acceptance"
@@ -51,8 +82,6 @@ if [[ "$BATCH" -eq 1 ]]; then
       *) echo "ERROR: invalid section: $SECTION_ARG (expected tasks|acceptance)"; exit 1 ;;
     esac
   fi
-  _B_FILE=""
-  _B_TARGET_SECTION=""
   if [[ "$_B_RESOLVED_SECTION" == "acceptance" ]]; then
     _B_FILE="${BDIR}/plan.md"
     _B_TARGET_SECTION="Acceptance"
@@ -78,6 +107,7 @@ if [[ "$BATCH" -eq 1 ]]; then
       fi
     fi
   fi
+  fi
   [[ -n "$_B_FILE" && -f "$_B_FILE" ]] || { echo "ERROR: no tasks.md/plan.md in ${BDIR}"; exit 1; }
   # Load file once.
   _B_LINES=()
@@ -101,9 +131,9 @@ if [[ "$BATCH" -eq 1 ]]; then
       if [[ "$_b_in_sec" -eq 1 && "$_bline" =~ ^##[[:space:]]+ ]]; then _b_in_sec=0; fi
       [[ "$_b_in_sec" -eq 0 ]] && continue
     fi
-    # Match exactly "- [X] " prefix (any single-char marker + trailing space).
+    # Match "- [X] " prefix or bare "- [X]" at end of line (fresh T0.5 boxes).
     case "$_bline" in
-      "- ["?"] "*) _B_BOX_POS+=("$_bi") ;;
+      "- ["?"] "*|"- ["?"]") _B_BOX_POS+=("$_bi") ;;
     esac
   done
   # In-memory tilde count (no awk per item).
@@ -236,7 +266,7 @@ fi
 
 DIR="${1:-}"; SPEC="${2:-}"; ACTION="${3:-}"; REASON="${4:-}"
 [[ -z "$DIR" || -z "$SPEC" || -z "$ACTION" ]] && {
-  sed -n '2,16p' "$0"; exit 1; }
+  sed -n '2,18p' "$0"; exit 1; }
 
 RESOLVED_SECTION=""
 if [[ "$FORCE_ACCEPTANCE" -eq 1 ]]; then
@@ -251,7 +281,11 @@ fi
 
 FILE=""
 TARGET_SECTION=""
-if [[ "$RESOLVED_SECTION" == "acceptance" ]]; then
+if [[ -f "$DIR" ]]; then
+  # v1.2.1: direct-file target (T0.5 quick plan via --quick or native path).
+  # Section flags are ignored: ALL checkboxes count in file order.
+  FILE="$DIR"
+elif [[ "$RESOLVED_SECTION" == "acceptance" ]]; then
   FILE="${DIR}/plan.md"
   TARGET_SECTION="Acceptance"
 elif [[ -n "$FILE_OVERRIDE" ]]; then
@@ -292,7 +326,7 @@ if [[ -n "$TARGET_SECTION" ]]; then
       }
       $0 ~ re { in_sec = 1; next }
       in_sec && /^##[[:space:]]+/ { in_sec = 0 }
-      in_sec && /^- \[.\] / {
+      in_sec && /^- \[.\]( |$)/ {
         c++
         if (c == n) { print NR; exit }
       }
@@ -310,7 +344,7 @@ if [[ -n "$TARGET_SECTION" ]]; then
       }
       $0 ~ re { in_sec = 1; next }
       in_sec && /^##[[:space:]]+/ { in_sec = 0 }
-      in_sec && /^- \[.\] / && index($0, pattern) {
+      in_sec && /^- \[.\]( |$)/ && index($0, pattern) {
         print NR; exit
       }
     ' "$FILE")
@@ -318,7 +352,7 @@ if [[ -n "$TARGET_SECTION" ]]; then
   fi
 else
   if [[ "$SPEC" =~ ^[0-9]+$ ]]; then
-    LINE_NO=$(awk -v n="$SPEC" '/^- \[.\] /{c++; if(c==n){print NR; exit}}' "$FILE")
+    LINE_NO=$(awk -v n="$SPEC" '/^- \[.\]( |$)/{c++; if(c==n){print NR; exit}}' "$FILE")
     [[ -z "$LINE_NO" ]] && { echo "ERROR: checkbox #$SPEC not found in $FILE"; exit 1; }
   else
     LINE_NO=$(grep -nE '^\- \[.\] .*'"$(echo "$SPEC" | sed 's/[][\.*^$/]/\\&/g')" "$FILE" | head -1 | cut -d: -f1 || true)
@@ -330,13 +364,13 @@ CURRENT=$(sed -n "${LINE_NO}p" "$FILE")
 
 set_marker() {
   local new="$1"
-  sed -i.bak "${LINE_NO}s/^- \\[.\\] /- [${new}] /" "$FILE"
+  sed -i.bak "${LINE_NO}s/^- \\[.\\]\\( \\|$\\)/- [${new}] /" "$FILE"
   rm -f "${FILE}.bak"
 }
 
 active_tilde() {
   local f="$1"
-  awk '/^- \[~\] /{c++} END{print c+0}' "$f"
+  awk '/^- \[~\]( |$)/{c++} END{print c+0}' "$f"
 }
 
 case "$ACTION" in
